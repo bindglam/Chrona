@@ -10,7 +10,7 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
 }
 
-rootProject.name = "fork"
+rootProject.name = "chrona"
 
-include("fork-api")
-include("fork-server")
+include("chrona-api")
+include("chrona-server")
