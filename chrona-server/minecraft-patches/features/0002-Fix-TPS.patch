@@ -1,0 +1,165 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Woobeen Jeon <woobeen0516@gmail.com>
+Date: Tue, 6 Jan 2026 21:06:53 +0900
+Subject: [PATCH] Fix TPS
+
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index 7aac2a6889af3edaebfaf94deecbf00d00758b68..376dff78206958da48c5c343579c438744e6b50f 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -172,6 +172,7 @@ import net.minecraft.world.level.storage.WorldData;
+ import net.minecraft.world.phys.Vec2;
+ import net.minecraft.world.phys.Vec3;
+ import org.slf4j.Logger;
++import org.wrd.chrona.tick.TickCalculator;
+ 
+ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTask> implements ServerInfo, ChunkIOErrorReporter, CommandSource, ca.spottedleaf.moonrise.patches.chunk_system.server.ChunkSystemMinecraftServer { // Paper - rewrite chunk system
+     private static MinecraftServer SERVER; // Paper
+@@ -1525,6 +1526,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+ 
+         this.server.spark.tickStart(); // Paper - spark
+         new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
++        TickCalculator.tick(); // Chrona - Fix TPS
+         this.tickCount++;
+         this.tickRateManager.tick();
+         this.tickChildren(hasTimeLeft);
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index dda8d38ef61672cc714d9e5a475f9b0412ed5ff9..4a1151d0869642d9eb983030bf7d6ddb16778bb8 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -167,6 +167,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
+ import net.minecraft.world.ticks.LevelTicks;
+ import net.minecraft.world.waypoints.WaypointTransmitter;
+ import org.slf4j.Logger;
++import org.wrd.chrona.tick.TickCalculator;
+ 
+ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLevel, ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel, ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemLevelReader, ca.spottedleaf.moonrise.patches.chunk_tick_iteration.ChunkTickServerLevel { // Paper - rewrite chunk system // Paper - chunk tick iteration
+     public static final BlockPos END_SPAWN_POINT = new BlockPos(100, 50, 0);
+@@ -834,7 +835,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+ 
+     protected void tickTime() {
+         if (this.tickTime) {
+-            long l = this.levelData.getGameTime() + 1L;
++            long l = this.levelData.getGameTime() + 1L + TickCalculator.getMissedTicks(); // Chrona - Fix TPS
+             this.serverLevelData.setGameTime(l);
+             Profiler.get().push("scheduledFunctions");
+             this.serverLevelData.getScheduledEvents().tick(this.server, l);
+diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
+index 0c52e315557e1dae6a852694786e72241fff1e29..83a635ed25f2e8d177443c88bafba67094e60204 100644
+--- a/net/minecraft/world/entity/LivingEntity.java
++++ b/net/minecraft/world/entity/LivingEntity.java
+@@ -147,6 +147,7 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
+ import org.bukkit.event.entity.EntityPotionEffectEvent;
+ import org.bukkit.event.entity.EntityRegainHealthEvent;
+ import org.bukkit.event.entity.EntityResurrectEvent;
++import org.wrd.chrona.tick.TickCalculator;
+ // CraftBukkit end
+ 
+ public abstract class LivingEntity extends Entity implements Attackable, WaypointTransmitter {
+@@ -511,6 +512,10 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+         }
+ 
+         this.tickEffects();
++        // Chrona start - Fix TPS
++        for(int i = 0; i < TickCalculator.getMissedTicks(); i++)
++            this.tickEffects();
++        // Chrona end - Fix TPS
+         this.yHeadRotO = this.yHeadRot;
+         this.yBodyRotO = this.yBodyRot;
+         this.yRotO = this.getYRot();
+diff --git a/net/minecraft/world/entity/item/ItemEntity.java b/net/minecraft/world/entity/item/ItemEntity.java
+index 51804b611f469f2ab53e455e8c633b867b00cc88..881040395f62a99c67300ba6b77ec780a481ff27 100644
+--- a/net/minecraft/world/entity/item/ItemEntity.java
++++ b/net/minecraft/world/entity/item/ItemEntity.java
+@@ -34,6 +34,7 @@ import net.minecraft.world.level.portal.TeleportTransition;
+ import net.minecraft.world.level.storage.ValueInput;
+ import net.minecraft.world.level.storage.ValueOutput;
+ import net.minecraft.world.phys.Vec3;
++import org.wrd.chrona.tick.TickCalculator;
+ 
+ public class ItemEntity extends Entity implements TraceableEntity {
+     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(ItemEntity.class, EntityDataSerializers.ITEM_STACK);
+@@ -134,7 +135,7 @@ public class ItemEntity extends Entity implements TraceableEntity {
+     public void inactiveTick() {
+         super.inactiveTick();
+         if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
+-            this.pickupDelay--;
++            this.pickupDelay -= TickCalculator.getMissedTicks() + 1; // Chrona - Fix TPS
+         }
+         if (this.age != -32768) {
+             this.age++;
+@@ -159,7 +160,7 @@ public class ItemEntity extends Entity implements TraceableEntity {
+         } else {
+             super.tick();
+             if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
+-                this.pickupDelay--;
++                this.pickupDelay -= TickCalculator.getMissedTicks() + 1; // Chrona - Fix TPS
+             }
+ 
+             this.xo = this.getX();
+diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
+index 8f4c45fbea2d7c1317aff36031bb834b07b23a82..77e261bbc3f63f86730a234b7eb259ebf8f31a94 100644
+--- a/net/minecraft/world/entity/player/Player.java
++++ b/net/minecraft/world/entity/player/Player.java
+@@ -124,6 +124,7 @@ import net.minecraft.world.scores.PlayerTeam;
+ import net.minecraft.world.scores.Scoreboard;
+ import net.minecraft.world.scores.Team;
+ import org.slf4j.Logger;
++import org.wrd.chrona.tick.TickCalculator;
+ 
+ public abstract class Player extends LivingEntity {
+     private static final Logger LOGGER = LogUtils.getLogger();
+@@ -297,7 +298,7 @@ public abstract class Player extends LivingEntity {
+         }
+ 
+         if (this.isSleeping()) {
+-            this.sleepCounter++;
++            this.sleepCounter+=1+TickCalculator.getMissedTicks(); // Chrona - Fix TPS
+             // Paper start - Add PlayerDeepSleepEvent
+             if (this.sleepCounter == SLEEP_DURATION) {
+                 if (!new io.papermc.paper.event.player.PlayerDeepSleepEvent((org.bukkit.entity.Player) getBukkitEntity()).callEvent()) {
+@@ -313,7 +314,7 @@ public abstract class Player extends LivingEntity {
+                 this.stopSleepInBed(false, true);
+             }
+         } else if (this.sleepCounter > 0) {
+-            this.sleepCounter++;
++            this.sleepCounter+=1+TickCalculator.getMissedTicks(); // Chrona - Fix TPS
+             if (this.sleepCounter >= 110) {
+                 this.sleepCounter = 0;
+             }
+diff --git a/org/wrd/chrona/tick/TickCalculator.java b/org/wrd/chrona/tick/TickCalculator.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..5ac9625d022d0e7fc27280a0b52f0e0622cbf268
+--- /dev/null
++++ b/org/wrd/chrona/tick/TickCalculator.java
+@@ -0,0 +1,29 @@
++package org.wrd.chrona.tick;
++
++public final class TickCalculator {
++    private static long lastTick = System.currentTimeMillis();
++    private static long currentTick = System.currentTimeMillis();
++    private static double allMissedTicks = 0.0;
++
++    private TickCalculator() {
++    }
++
++    public static void tick() {
++        lastTick = currentTick;
++        currentTick = System.currentTimeMillis();
++
++        allMissedTicks -= Math.floor(allMissedTicks);
++
++        long mspt = currentTick - lastTick <= 0 ? 50 : currentTick - lastTick;
++        double missedTicks = (mspt / 50.0) - 1;
++        allMissedTicks += missedTicks <= 0 ? 0 : missedTicks;
++    }
++
++    public static double getAllMissedTicks() {
++        return allMissedTicks;
++    }
++
++    public static int getMissedTicks() {
++        return (int) Math.floor(allMissedTicks);
++    }
++}
