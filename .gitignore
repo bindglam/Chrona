@@ -6,10 +6,10 @@ build
 
 /run
 
-/fork-server/build.gradle.kts
-/fork-server/src/minecraft
+/chrona-server/build.gradle.kts
+/chrona-server/src/minecraft
 /paper-server
-/fork-api/build.gradle.kts
+/chrona-api/build.gradle.kts
 /paper-api
 /paper-api-generator
 
