@@ -1,0 +1,58 @@
+--- a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
++++ b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
+@@ -35,7 +_,7 @@
+     private static final Logger LOGGER = LogUtils.getClassLogger();
+     private static final int DISTANCE_ERROR = -1;
+     private static final int DISTANCE_UNKNOWN = -2;
+-    private static final String DOWNLOAD_PAGE = "https://papermc.io/downloads/paper";
++    private static final String DOWNLOAD_PAGE = "https://api.example.com/nonexistent/downloads"; // Chrona
+ 
+     @Override
+     public long getCacheTime() {
+@@ -49,7 +_,7 @@
+         if (build.buildNumber().isEmpty() && build.gitCommit().isEmpty()) {
+             updateMessage = text("You are running a development version without access to version information", color(0xFF5300));
+         } else {
+-            updateMessage = getUpdateStatusMessage("PaperMC/Paper", build);
++            updateMessage = getUpdateStatusMessage("bindglam/Chrona", build); // Chrona
+         }
+         final @Nullable Component history = this.getHistory();
+ 
+@@ -59,16 +_,18 @@
+     private static Component getUpdateStatusMessage(final String repo, final ServerBuildInfo build) {
+         int distance = DISTANCE_ERROR;
+ 
++        /* // Chrona start
+         final OptionalInt buildNumber = build.buildNumber();
+         if (buildNumber.isPresent()) {
+             distance = fetchDistanceFromSiteApi(build, buildNumber.getAsInt());
+         } else {
++        */ // Chrona
+             final Optional<String> gitBranch = build.gitBranch();
+             final Optional<String> gitCommit = build.gitCommit();
+             if (gitBranch.isPresent() && gitCommit.isPresent()) {
+                 distance = fetchDistanceFromGitHub(repo, gitBranch.get(), gitCommit.get());
+             }
+-        }
++        //} // Chrona
+ 
+         return switch (distance) {
+             case DISTANCE_ERROR -> text("Error obtaining version information", NamedTextColor.YELLOW);
+@@ -86,7 +_,7 @@
+     private static int fetchDistanceFromSiteApi(final ServerBuildInfo build, final int jenkinsBuild) {
+         try {
+             try (final BufferedReader reader = Resources.asCharSource(
+-                URI.create("https://api.papermc.io/v2/projects/paper/versions/" + build.minecraftVersionId()).toURL(),
++                URI.create("https://api.example.com/nonexistent/" + build.minecraftVersionId()).toURL(), // Chrona
+                 StandardCharsets.UTF_8
+             ).openBufferedStream()) {
+                 final JsonObject json = new Gson().fromJson(reader, JsonObject.class);
+@@ -97,7 +_,7 @@
+                     .orElseThrow();
+                 return latest - jenkinsBuild;
+             } catch (final JsonSyntaxException ex) {
+-                LOGGER.error("Error parsing json from Paper's downloads API", ex);
++                LOGGER.error("Error parsing json from Chrona's downloads API", ex); // Chrona
+                 return DISTANCE_ERROR;
+             }
+         } catch (final IOException e) {

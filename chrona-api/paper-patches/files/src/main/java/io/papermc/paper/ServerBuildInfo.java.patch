@@ -1,0 +1,16 @@
+--- a/src/main/java/io/papermc/paper/ServerBuildInfo.java
++++ b/src/main/java/io/papermc/paper/ServerBuildInfo.java
+@@ -19,6 +_,13 @@
+      */
+     Key BRAND_PAPER_ID = Key.key("papermc", "paper");
+ 
++    // Chrona start
++    /**
++     * The brand id for Chrona.
++     */
++    Key BRAND_CHRONA_ID = Key.key("wrd", "chrona");
++    // Chrona end
++
+     /**
+      * Gets the {@code ServerBuildInfo}.
+      *
