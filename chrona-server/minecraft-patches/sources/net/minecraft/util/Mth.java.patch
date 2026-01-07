@@ -1,0 +1,35 @@
+--- a/net/minecraft/util/Mth.java
++++ b/net/minecraft/util/Mth.java
+@@ -162,13 +_,25 @@
+         return Math.floorMod(x, y);
+     }
+ 
+-    public static float positiveModulo(float numerator, float denominator) {
+-        return (numerator % denominator + denominator) % denominator;
+-    }
+-
+-    public static double positiveModulo(double numerator, double denominator) {
+-        return (numerator % denominator + denominator) % denominator;
+-    }
++    public static float positiveModuloForAnyDenominator(float numerator, float denominator) { // Gale - faster floating-point positive modulo
++        return (numerator % denominator + denominator) % denominator;
++    }
++
++    public static double positiveModuloForAnyDenominator(double numerator, double denominator) { // Gale - faster floating-point positive modulo
++        return (numerator % denominator + denominator) % denominator;
++    }
++
++    // Gale start - faster floating-point positive modulo
++    public static float positiveModuloForPositiveIntegerDenominator(float numerator, float denominator) {
++        var modulo = numerator % denominator;
++        return modulo < 0 ? modulo + denominator : modulo;
++    }
++
++    public static double positiveModuloForPositiveIntegerDenominator(double numerator, double denominator) {
++        var modulo = numerator % denominator;
++        return modulo < 0 ? modulo + denominator : modulo;
++    }
++    // Gale end - faster floating-point positive modulo
+ 
+     public static boolean isMultipleOf(int number, int multiple) {
+         return number % multiple == 0;

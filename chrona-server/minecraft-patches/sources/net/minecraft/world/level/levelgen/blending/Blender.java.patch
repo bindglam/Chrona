@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/level/levelgen/blending/Blender.java
++++ b/net/minecraft/world/level/levelgen/blending/Blender.java
+@@ -144,7 +_,7 @@
+     private static double heightToOffset(double height) {
+         double d = 1.0;
+         double d1 = height + 0.5;
+-        double d2 = Mth.positiveModulo(d1, 8.0);
++        double d2 = Mth.positiveModuloForPositiveIntegerDenominator(d1, 8.0); // Gale - faster floating-point positive modulo
+         return 1.0 * (32.0 * (d1 - 128.0) - 3.0 * (d1 - 120.0) * d2 + 3.0 * d2 * d2) / (128.0 * (32.0 - 3.0 * d2));
+     }
+ 
