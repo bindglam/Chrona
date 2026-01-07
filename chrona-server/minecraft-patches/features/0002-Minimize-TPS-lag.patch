@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Woobeen Jeon <woobeen0516@gmail.com>
+Date: Wed, 7 Jan 2026 12:04:28 +0900
+Subject: [PATCH] Minimize TPS lag
+
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index 7aac2a6889af3edaebfaf94deecbf00d00758b68..8f648fcbc79f86c58f5f07a0506e40300091653d 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -1525,6 +1525,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+ 
+         this.server.spark.tickStart(); // Paper - spark
+         new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
++        org.wrd.chrona.tick.TickCalculator.tick(); // Chrona - Minimize TPS lag
+         this.tickCount++;
+         this.tickRateManager.tick();
+         this.tickChildren(hasTimeLeft);
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index dda8d38ef61672cc714d9e5a475f9b0412ed5ff9..c5ce255e4d3f8e2a45f553d9cf267b53bf00baab 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -834,7 +834,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+ 
+     protected void tickTime() {
+         if (this.tickTime) {
+-            long l = this.levelData.getGameTime() + 1L;
++            long l = this.levelData.getGameTime() + 1L + org.wrd.chrona.tick.TickCalculator.getMissedTicks(); // Chrona - Minimize TPS lag
+             this.serverLevelData.setGameTime(l);
+             Profiler.get().push("scheduledFunctions");
+             this.serverLevelData.getScheduledEvents().tick(this.server, l);
+diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
+index 0c52e315557e1dae6a852694786e72241fff1e29..a1695f2e51c695f2307a10aaefb8924df8188c4a 100644
+--- a/net/minecraft/world/entity/LivingEntity.java
++++ b/net/minecraft/world/entity/LivingEntity.java
+@@ -511,6 +511,10 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+         }
+ 
+         this.tickEffects();
++        // Chrona start - Minimize TPS lag
++        for(int i = 0; i < org.wrd.chrona.tick.TickCalculator.getMissedTicks(); i++)
++            this.tickEffects();
++        // Chrona end - Minimize TPS lag
+         this.yHeadRotO = this.yHeadRot;
+         this.yBodyRotO = this.yBodyRot;
+         this.yRotO = this.getYRot();
+diff --git a/net/minecraft/world/entity/item/ItemEntity.java b/net/minecraft/world/entity/item/ItemEntity.java
+index 51804b611f469f2ab53e455e8c633b867b00cc88..86afc9c1fad6ea32caa6bdfce77dbdb9be22415d 100644
+--- a/net/minecraft/world/entity/item/ItemEntity.java
++++ b/net/minecraft/world/entity/item/ItemEntity.java
+@@ -134,7 +134,7 @@ public class ItemEntity extends Entity implements TraceableEntity {
+     public void inactiveTick() {
+         super.inactiveTick();
+         if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
+-            this.pickupDelay--;
++            this.pickupDelay -= org.wrd.chrona.tick.TickCalculator.getMissedTicks() + 1; // Chrona - Minimize TPS lag
+         }
+         if (this.age != -32768) {
+             this.age++;
+@@ -159,7 +159,7 @@ public class ItemEntity extends Entity implements TraceableEntity {
+         } else {
+             super.tick();
+             if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
+-                this.pickupDelay--;
++                this.pickupDelay -= org.wrd.chrona.tick.TickCalculator.getMissedTicks() + 1; // Chrona - Minimize TPS lag
+             }
+ 
+             this.xo = this.getX();
+diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
+index 8f4c45fbea2d7c1317aff36031bb834b07b23a82..6955071dba44a232eb8fd1b5f2999f344265cc6d 100644
+--- a/net/minecraft/world/entity/player/Player.java
++++ b/net/minecraft/world/entity/player/Player.java
+@@ -297,7 +297,7 @@ public abstract class Player extends LivingEntity {
+         }
+ 
+         if (this.isSleeping()) {
+-            this.sleepCounter++;
++            this.sleepCounter+=1+org.wrd.chrona.tick.TickCalculator.getMissedTicks(); // Chrona - Minimize TPS lag
+             // Paper start - Add PlayerDeepSleepEvent
+             if (this.sleepCounter == SLEEP_DURATION) {
+                 if (!new io.papermc.paper.event.player.PlayerDeepSleepEvent((org.bukkit.entity.Player) getBukkitEntity()).callEvent()) {
+@@ -313,7 +313,7 @@ public abstract class Player extends LivingEntity {
+                 this.stopSleepInBed(false, true);
+             }
+         } else if (this.sleepCounter > 0) {
+-            this.sleepCounter++;
++            this.sleepCounter+=1+org.wrd.chrona.tick.TickCalculator.getMissedTicks(); // Chrona - Minimize TPS lag
+             if (this.sleepCounter >= 110) {
+                 this.sleepCounter = 0;
+             }
