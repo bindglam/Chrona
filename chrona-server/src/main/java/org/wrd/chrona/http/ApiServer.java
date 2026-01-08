@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.wrd.chrona.http.api.ApiProvider;
 import org.wrd.chrona.http.api.HandlerContext;
 import org.wrd.chrona.http.api.HandlerContextImpl;
-import org.wrd.chrona.http.api.provider.PlayerCountProvider;
+import org.wrd.chrona.http.api.provider.PlayerListProvider;
 import org.wrd.chrona.http.api.provider.PlayerInventoryProvider;
 import org.wrd.chrona.http.api.provider.TPSProvider;
 
@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 
 public class ApiServer implements Runnable, AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiServer.class);
-    private static final List<ApiProvider> PROVIDERS = List.of(new PlayerCountProvider(), new TPSProvider(), new PlayerInventoryProvider());
+    private static final List<ApiProvider> PROVIDERS = List.of(new PlayerListProvider(), new TPSProvider(), new PlayerInventoryProvider());
 
     private final ServerProperties properties;
 
