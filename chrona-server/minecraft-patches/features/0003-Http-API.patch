@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Woobeen Jeon <woobeen0516@gmail.com>
+Date: Thu, 8 Jan 2026 20:04:49 +0900
+Subject: [PATCH] Http API
+
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index 4b5ed1e487e1d6e3041d3a3753ba63b984735609..014a7b08e09318d52de4e00cb97fb0be9bebb2f4 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -304,6 +304,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+     public boolean isIteratingOverLevels = false; // Paper - Throw exception on world create while being ticked
+     private final Set<String> pluginsBlockingSleep = new java.util.HashSet<>(); // Paper - API to allow/disallow tick sleeping
+     public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
++    // Chrona start - Http server
++    @Nullable
++    public org.wrd.chrona.util.Threaded<org.wrd.chrona.http.ApiServer> httpServer;
++    // Chrona end - Http server
+ 
+     public static <S extends MinecraftServer> S spin(Function<Thread, S> threadFunction) {
+         ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry.init(); // Paper - rewrite data converter system
+@@ -998,6 +1002,12 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+ 
+         LOGGER.info("Stopping server");
+         Commands.COMMAND_SENDING_POOL.shutdownNow(); // Paper - Perf: Async command map building; Shutdown and don't bother finishing
++        try {
++            if(this.httpServer != null)
++                this.httpServer.stop(); // Chrona - Http server
++        } catch (Exception e) {
++            LOGGER.error("Failed to stop http server", e);
++        }
+         // CraftBukkit start
+         if (this.server != null) {
+             this.server.spark.disable(); // Paper - spark
+diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
+index 973f6f85222fd2f958b4af4a63c114fcef852f5a..5f29613defc87b4dafd5dbcf8e34420d44934f50 100644
+--- a/net/minecraft/server/dedicated/DedicatedServer.java
++++ b/net/minecraft/server/dedicated/DedicatedServer.java
+@@ -232,6 +232,17 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+             return false;
+         }
+ 
++        // Chrona start - Http server
++        if(Boolean.TRUE.equals(this.chronaConfiguration.httpServerEnabled.getValue())) {
++            this.httpServer = org.wrd.chrona.util.Threaded.wrap(new org.wrd.chrona.http.ApiServer(
++                    org.wrd.chrona.http.ServerProperties.builder()
++                            .port(this.chronaConfiguration.httpServerPort.getValue())
++                            .build()
++            ));
++            this.httpServer.start();
++        }
++        // Chrona end - Http server
++
+         // CraftBukkit start
+         this.server.loadPlugins();
+         this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.STARTUP);
