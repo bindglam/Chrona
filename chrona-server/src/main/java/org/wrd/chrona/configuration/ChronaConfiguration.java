@@ -7,6 +7,8 @@ public final class ChronaConfiguration extends Configuration {
     private static final File CONFIG_FILE = new File("chrona.yml");
 
     public final Field<Boolean> minimizeTPSLag = createField("optimization.minimize-tps-lag", false);
+    public final Field<Boolean> httpServerEnabled = createField("http-server.enabled", false);
+    public final Field<Integer> httpServerPort = createField("http-server.port", 3000);
 
     public ChronaConfiguration() {
         super(CONFIG_FILE);
