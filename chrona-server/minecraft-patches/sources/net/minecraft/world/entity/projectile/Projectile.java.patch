@@ -1,0 +1,57 @@
+--- a/net/minecraft/world/entity/projectile/Projectile.java
++++ b/net/minecraft/world/entity/projectile/Projectile.java
+@@ -50,6 +_,54 @@
+         super(entityType, level);
+     }
+ 
++    // Gale start - Airplane - reduce projectile chunk loading
++    private static int chunksLoadedThisTick = 0;
++    private static int chunksLoadedInTick;
++    private int chunksLoadedByProjectile = 0;
++
++    @Override
++    public void setPos(double x, double y, double z) {
++        int currentTick = net.minecraft.server.MinecraftServer.currentTick;
++
++        if (chunksLoadedInTick != currentTick) {
++            chunksLoadedInTick = currentTick;
++            chunksLoadedThisTick = 0;
++        }
++
++        int previousX = Mth.floor(this.getX()) >> 4, previousZ = Mth.floor(this.getZ()) >> 4;
++        int newX = Mth.floor(x) >> 4, newZ = Mth.floor(z) >> 4;
++
++        if (previousX != newX || previousZ != newZ) {
++            boolean isLoaded = ((net.minecraft.server.level.ServerChunkCache)
++                    this.level().getChunkSource()).getChunkAtIfLoadedImmediately(newX, newZ) != null;
++            if (!isLoaded) {
++                int maxChunkLoadsPerTick = getServer().chronaConfiguration.optimizationMaxProjectileChunkLoadsPerTick.getValue();
++
++                if (maxChunkLoadsPerTick >= 0 && chunksLoadedThisTick > maxChunkLoadsPerTick) {
++                    return;
++                }
++
++                int maxChunkLoadsPerProjectile = getServer().chronaConfiguration.optimizationMaxProjectileChunkLoadsPerProjectileMax.getValue();
++
++                if (maxChunkLoadsPerProjectile >= 0 && this.chunksLoadedByProjectile >= maxChunkLoadsPerProjectile) {
++                    if (Boolean.TRUE.equals(getServer().chronaConfiguration.optimizationMaxProjectileChunkLoadsPerProjectileRemoveFromWorldAfterReachLimit.getValue())) {
++                        this.discard();
++                    } else if (Boolean.TRUE.equals(getServer().chronaConfiguration.optimizationMaxProjectileChunkLoadsPerProjectileResetMovementAfterReachLimit.getValue())) {
++                        this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
++                    }
++
++                    return;
++                }
++
++                chunksLoadedThisTick++;
++                this.chunksLoadedByProjectile++;
++            }
++        }
++
++        super.setPos(x, y, z);
++    }
++    // Gale end - Airplane - reduce projectile chunk loading
++
+     protected void setOwner(@Nullable EntityReference<Entity> owner) {
+         this.owner = owner;
+     }

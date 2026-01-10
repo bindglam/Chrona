@@ -16,6 +16,11 @@ public final class ChronaConfiguration extends Configuration {
     public final Field<Integer> optimizationAsyncPathfindingQueueSize = createField("optimization.async.pathfinding.queue-size", 0);
     public final Field<String> optimizationAsyncPathfindingRejectPolicy = createField("optimization.async.pathfinding.reject-policy", PathfindTaskRejectPolicy.FLUSH_ALL.name());
 
+    public final Field<Integer> optimizationMaxProjectileChunkLoadsPerProjectileMax = createField("optimization.max-projectile-chunk-loads.per-projectile.max", 10);
+    public final Field<Boolean> optimizationMaxProjectileChunkLoadsPerProjectileRemoveFromWorldAfterReachLimit = createField("optimization.max-projectile-chunk-loads.per-projectile.remove-from-world-after-reach-limit", false);
+    public final Field<Boolean> optimizationMaxProjectileChunkLoadsPerProjectileResetMovementAfterReachLimit = createField("optimization.max-projectile-chunk-loads.per-projectile.reset-movement-after-reach-limit", false);
+    public final Field<Integer> optimizationMaxProjectileChunkLoadsPerTick = createField("optimization.max-projectile-chunk-loads.per-tick", 10);
+
     public final Field<Boolean> httpServerEnabled = createField("http-server.enabled", false);
     public final Field<Integer> httpServerPort = createField("http-server.port", 3000);
 
