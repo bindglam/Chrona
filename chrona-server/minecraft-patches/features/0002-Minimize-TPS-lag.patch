@@ -17,7 +17,7 @@ index 8e65ff139385be512a0a3fd00dbd9bc94daa967d..4b5ed1e487e1d6e3041d3a3753ba63b9
          this.tickRateManager.tick();
          this.tickChildren(hasTimeLeft);
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index dda8d38ef61672cc714d9e5a475f9b0412ed5ff9..cfd022ccfa25a4789b3bd4dc0df9e3df94207a19 100644
+index dda8d38ef61672cc714d9e5a475f9b0412ed5ff9..54ee9a7ca37ed9a9bab5f7cb618f2e019d85f951 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
 @@ -835,6 +835,10 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
@@ -25,14 +25,14 @@ index dda8d38ef61672cc714d9e5a475f9b0412ed5ff9..cfd022ccfa25a4789b3bd4dc0df9e3df
          if (this.tickTime) {
              long l = this.levelData.getGameTime() + 1L;
 +            // Chrona start - Minimize TPS lag
-+            if(Boolean.TRUE.equals(this.server.chronaConfiguration.minimizeTPSLag.getValue()))
++            if(Boolean.TRUE.equals(this.server.chronaConfiguration.optimizationMinimizeTPSLag.getValue()))
 +                l += org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +            // Chrona end - Minimize TPS lag
              this.serverLevelData.setGameTime(l);
              Profiler.get().push("scheduledFunctions");
              this.serverLevelData.getScheduledEvents().tick(this.server, l);
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 0c52e315557e1dae6a852694786e72241fff1e29..943549f7aef889266a33eea562d8169faf2cf8ac 100644
+index 3eb4ec6e6695c01be253a1160397af31a1302927..e5b8f1b97430310d703c971c0f7f610ec779c3e4 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -511,6 +511,12 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -40,7 +40,7 @@ index 0c52e315557e1dae6a852694786e72241fff1e29..943549f7aef889266a33eea562d8169f
  
          this.tickEffects();
 +        // Chrona start - Minimize TPS lag
-+        if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.minimizeTPSLag.getValue())) {
++        if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimizationMinimizeTPSLag.getValue())) {
 +            for (int i = 0; i < org.wrd.chrona.tick.TickCalculator.getMissedTicks(); i++)
 +                this.tickEffects();
 +        }
@@ -49,7 +49,7 @@ index 0c52e315557e1dae6a852694786e72241fff1e29..943549f7aef889266a33eea562d8169f
          this.yBodyRotO = this.yBodyRot;
          this.yRotO = this.getYRot();
 diff --git a/net/minecraft/world/entity/item/ItemEntity.java b/net/minecraft/world/entity/item/ItemEntity.java
-index 51804b611f469f2ab53e455e8c633b867b00cc88..0695b618542aad037961350abc3625c9d5949df8 100644
+index 51804b611f469f2ab53e455e8c633b867b00cc88..dc7b68797b12e51c4379c5864334acaf94d2e428 100644
 --- a/net/minecraft/world/entity/item/ItemEntity.java
 +++ b/net/minecraft/world/entity/item/ItemEntity.java
 @@ -135,6 +135,10 @@ public class ItemEntity extends Entity implements TraceableEntity {
@@ -57,7 +57,7 @@ index 51804b611f469f2ab53e455e8c633b867b00cc88..0695b618542aad037961350abc3625c9
          if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
              this.pickupDelay--;
 +            // Chrona start - Minimize TPS lag
-+            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.minimizeTPSLag.getValue()))
++            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimizationMinimizeTPSLag.getValue()))
 +                this.pickupDelay -= org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +            // Chrona end - Minimize TPS lag
          }
@@ -68,14 +68,14 @@ index 51804b611f469f2ab53e455e8c633b867b00cc88..0695b618542aad037961350abc3625c9
              if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
                  this.pickupDelay--;
 +                // Chrona start - Minimize TPS lag
-+                if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.minimizeTPSLag.getValue()))
++                if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimizationMinimizeTPSLag.getValue()))
 +                    this.pickupDelay -= org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +                // Chrona end - Minimize TPS lag
              }
  
              this.xo = this.getX();
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index 8f4c45fbea2d7c1317aff36031bb834b07b23a82..226a94d59ef110e4ad036d43b4339f98ec9b480f 100644
+index 8f4c45fbea2d7c1317aff36031bb834b07b23a82..82844180134d7375ad930de8d3037c3ab88734ef 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
 @@ -298,6 +298,10 @@ public abstract class Player extends LivingEntity {
@@ -83,7 +83,7 @@ index 8f4c45fbea2d7c1317aff36031bb834b07b23a82..226a94d59ef110e4ad036d43b4339f98
          if (this.isSleeping()) {
              this.sleepCounter++;
 +            // Chrona start - Minimize TPS lag
-+            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.minimizeTPSLag.getValue()))
++            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimizationMinimizeTPSLag.getValue()))
 +                this.sleepCounter += org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +            // Chrona end - Minimize TPS lag
              // Paper start - Add PlayerDeepSleepEvent
@@ -94,7 +94,7 @@ index 8f4c45fbea2d7c1317aff36031bb834b07b23a82..226a94d59ef110e4ad036d43b4339f98
          } else if (this.sleepCounter > 0) {
              this.sleepCounter++;
 +            // Chrona start - Minimize TPS lag
-+            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.minimizeTPSLag.getValue()))
++            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimizationMinimizeTPSLag.getValue()))
 +                this.sleepCounter += org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +            // Chrona end - Minimize TPS lag
              if (this.sleepCounter >= 110) {
