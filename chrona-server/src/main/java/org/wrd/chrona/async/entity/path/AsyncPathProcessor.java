@@ -79,7 +79,9 @@ public class AsyncPathProcessor {
     }
 
     private static int getMaxPoolSize(ChronaConfiguration config) {
-        return config.optimizationAsyncPathfindingMaxThreads.getValue();
+        return config.optimizationAsyncPathfindingMaxThreads.getValue() <= 0
+                ? Math.max(Runtime.getRuntime().availableProcessors() / 4, 1)
+                : config.optimizationAsyncPathfindingMaxThreads.getValue();
     }
 
     private static long getKeepAliveTime(ChronaConfiguration config) {
@@ -87,7 +89,9 @@ public class AsyncPathProcessor {
     }
 
     private static BlockingQueue<Runnable> getQueueImpl(ChronaConfiguration config) {
-        final int queueCapacity = config.optimizationAsyncPathfindingQueueSize.getValue();
+        final int queueCapacity = config.optimizationAsyncPathfindingQueueSize.getValue() <= 0
+                ? getMaxPoolSize(config) * 256
+                : config.optimizationAsyncPathfindingQueueSize.getValue();
 
         return new LinkedBlockingQueue<>(queueCapacity);
     }
