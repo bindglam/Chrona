@@ -25,18 +25,18 @@
 +            boolean isLoaded = ((net.minecraft.server.level.ServerChunkCache)
 +                    this.level().getChunkSource()).getChunkAtIfLoadedImmediately(newX, newZ) != null;
 +            if (!isLoaded) {
-+                int maxChunkLoadsPerTick = getServer().chronaConfiguration.optimizationMaxProjectileChunkLoadsPerTick.getValue();
++                int maxChunkLoadsPerTick = getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perTick.getValue();
 +
 +                if (maxChunkLoadsPerTick >= 0 && chunksLoadedThisTick > maxChunkLoadsPerTick) {
 +                    return;
 +                }
 +
-+                int maxChunkLoadsPerProjectile = getServer().chronaConfiguration.optimizationMaxProjectileChunkLoadsPerProjectileMax.getValue();
++                int maxChunkLoadsPerProjectile = getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.max.getValue();
 +
 +                if (maxChunkLoadsPerProjectile >= 0 && this.chunksLoadedByProjectile >= maxChunkLoadsPerProjectile) {
-+                    if (Boolean.TRUE.equals(getServer().chronaConfiguration.optimizationMaxProjectileChunkLoadsPerProjectileRemoveFromWorldAfterReachLimit.getValue())) {
++                    if (Boolean.TRUE.equals(getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.removeFromWorldAfterReachLimit.getValue())) {
 +                        this.discard();
-+                    } else if (Boolean.TRUE.equals(getServer().chronaConfiguration.optimizationMaxProjectileChunkLoadsPerProjectileResetMovementAfterReachLimit.getValue())) {
++                    } else if (Boolean.TRUE.equals(getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.resetMovementAfterReachLimit.getValue())) {
 +                        this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
 +                    }
 +

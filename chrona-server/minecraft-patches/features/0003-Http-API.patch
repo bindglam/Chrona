@@ -33,7 +33,7 @@ index 4b5ed1e487e1d6e3041d3a3753ba63b984735609..014a7b08e09318d52de4e00cb97fb0be
          if (this.server != null) {
              this.server.spark.disable(); // Paper - spark
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 973f6f85222fd2f958b4af4a63c114fcef852f5a..5f29613defc87b4dafd5dbcf8e34420d44934f50 100644
+index 973f6f85222fd2f958b4af4a63c114fcef852f5a..da86361ddf64941ab9595ea786ce5b4d2240f247 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -232,6 +232,17 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
@@ -41,10 +41,10 @@ index 973f6f85222fd2f958b4af4a63c114fcef852f5a..5f29613defc87b4dafd5dbcf8e34420d
          }
  
 +        // Chrona start - Http server
-+        if(Boolean.TRUE.equals(this.chronaConfiguration.httpServerEnabled.getValue())) {
++        if(Boolean.TRUE.equals(this.chronaConfiguration.httpServer.enabled.getValue())) {
 +            this.httpServer = org.wrd.chrona.util.Threaded.wrap(new org.wrd.chrona.http.ApiServer(
 +                    org.wrd.chrona.http.ServerProperties.builder()
-+                            .port(this.chronaConfiguration.httpServerPort.getValue())
++                            .port(this.chronaConfiguration.httpServer.port.getValue())
 +                            .build()
 +            ));
 +            this.httpServer.start();

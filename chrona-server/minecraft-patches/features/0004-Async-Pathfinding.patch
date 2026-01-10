@@ -5,7 +5,7 @@ Subject: [PATCH] Async Pathfinding
 
 
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 5f29613defc87b4dafd5dbcf8e34420d44934f50..a7d5dd9e8491f44982e5a06312e884ef7b06f388 100644
+index da86361ddf64941ab9595ea786ce5b4d2240f247..ea56dea1416d9e599c9c0f6e822276b7886b0313 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -172,6 +172,10 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
@@ -13,14 +13,14 @@ index 5f29613defc87b4dafd5dbcf8e34420d44934f50..a7d5dd9e8491f44982e5a06312e884ef
          // Paper end - initialize global and world-defaults configuration
          this.chronaConfiguration.load(); // Chrona - load chrona configuration
 +        // Chrona start - async path finding
-+        if(Boolean.TRUE.equals(this.chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue()))
++        if(Boolean.TRUE.equals(this.chronaConfiguration.optimization.async.pathfinding.enabled.getValue()))
 +            org.wrd.chrona.async.entity.path.AsyncPathProcessor.init(this.chronaConfiguration);
 +        // Chrona end - async path finding
          this.server.spark.enableEarlyIfRequested(); // Paper - spark
          // Paper start - fix converting txt to json file; convert old users earlier after PlayerList creation but before file load/save
          if (this.convertOldUsers()) {
 diff --git a/net/minecraft/world/entity/ai/behavior/AcquirePoi.java b/net/minecraft/world/entity/ai/behavior/AcquirePoi.java
-index b9174ae7e3a3e2de2d570b95ab5012ac3c3a2eda..f762887273512ade474fd0372aead73e33a3fd64 100644
+index b9174ae7e3a3e2de2d570b95ab5012ac3c3a2eda..9747e33d8a1b6b84a8300228b494fa8899fadd17 100644
 --- a/net/minecraft/world/entity/ai/behavior/AcquirePoi.java
 +++ b/net/minecraft/world/entity/ai/behavior/AcquirePoi.java
 @@ -94,21 +94,20 @@ public class AcquirePoi {
@@ -38,7 +38,7 @@ index b9174ae7e3a3e2de2d570b95ab5012ac3c3a2eda..f762887273512ade474fd0372aead73e
 -                                    DebugPackets.sendPoiTicketCountPacket(level, target);
 -                                });
 +                            // Kaiiju start - petal - Async path processing
-+                            if(Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++                            if(Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                                // await on path async
 +                                Path possiblePath = findPathToPois(mob, set);
 +
@@ -93,7 +93,7 @@ index b9174ae7e3a3e2de2d570b95ab5012ac3c3a2eda..f762887273512ade474fd0372aead73e
      public static Path findPathToPois(Mob mob, Set<Pair<Holder<PoiType>, BlockPos>> poiPositions) {
          if (poiPositions.isEmpty()) {
 diff --git a/net/minecraft/world/entity/ai/behavior/MoveToTargetSink.java b/net/minecraft/world/entity/ai/behavior/MoveToTargetSink.java
-index 621ba76784f2b92790eca62be4d0688834335ab6..3cb29e93809c054d514bfd4d1e549ed7c3bff8b6 100644
+index 621ba76784f2b92790eca62be4d0688834335ab6..fb75ef7c147bd1a7cc868266ff36748eb5a75109 100644
 --- a/net/minecraft/world/entity/ai/behavior/MoveToTargetSink.java
 +++ b/net/minecraft/world/entity/ai/behavior/MoveToTargetSink.java
 @@ -21,6 +21,7 @@ public class MoveToTargetSink extends Behavior<Mob> {
@@ -109,10 +109,10 @@ index 621ba76784f2b92790eca62be4d0688834335ab6..3cb29e93809c054d514bfd4d1e549ed7
              WalkTarget walkTarget = brain.getMemory(MemoryModuleType.WALK_TARGET).get();
              boolean flag = this.reachedTarget(owner, walkTarget);
 -            if (!flag && this.tryComputePath(owner, walkTarget, level.getGameTime())) {
-+            if (Boolean.FALSE.equals(level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue()) && !flag && this.tryComputePath(owner, walkTarget, level.getGameTime())) { // Kaiiju - petal - async path processing means we can't know if the path is reachable here
++            if (Boolean.FALSE.equals(level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()) && !flag && this.tryComputePath(owner, walkTarget, level.getGameTime())) { // Kaiiju - petal - async path processing means we can't know if the path is reachable here
                  this.lastTargetPos = walkTarget.getTarget().currentBlockPosition();
                  return true;
-+            } else if(Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue()) && !flag) { return true; // Kaiiju - async pathfinding
++            } else if(Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()) && !flag) { return true; // Kaiiju - async pathfinding
              } else {
                  brain.eraseMemory(MemoryModuleType.WALK_TARGET);
                  if (flag) {
@@ -120,7 +120,7 @@ index 621ba76784f2b92790eca62be4d0688834335ab6..3cb29e93809c054d514bfd4d1e549ed7
  
      @Override
      protected boolean canStillUse(ServerLevel level, Mob entity, long gameTime) {
-+        if(Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue()) && !this.finishedProcessing) return true; // Kaiiju - petal - wait for processing
++        if(Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()) && !this.finishedProcessing) return true; // Kaiiju - petal - wait for processing
          if (this.path != null && this.lastTargetPos != null) {
              Optional<WalkTarget> memory = entity.getBrain().getMemory(MemoryModuleType.WALK_TARGET);
              boolean flag = memory.map(MoveToTargetSink::isWalkTargetSpectator).orElse(false);
@@ -129,7 +129,7 @@ index 621ba76784f2b92790eca62be4d0688834335ab6..3cb29e93809c054d514bfd4d1e549ed7
      @Override
      protected void start(ServerLevel level, Mob entity, long gameTime) {
 +        // Kaiiju start - petal - start processing
-+        if(Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++        if(Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +            Brain<?> brain = entity.getBrain();
 +            WalkTarget walkTarget = brain.getMemory(MemoryModuleType.WALK_TARGET).get();
 +
@@ -146,7 +146,7 @@ index 621ba76784f2b92790eca62be4d0688834335ab6..3cb29e93809c054d514bfd4d1e549ed7
      @Override
      protected void tick(ServerLevel level, Mob owner, long gameTime) {
 +        // Kaiiju start - petal - Async path processing
-+        if (Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++        if (Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +            if (this.path != null && !this.path.isProcessed()) return; // wait for processing
 +
 +            if (!this.finishedProcessing) {
@@ -216,7 +216,7 @@ index 621ba76784f2b92790eca62be4d0688834335ab6..3cb29e93809c054d514bfd4d1e549ed7
      private boolean tryComputePath(Mob mob, WalkTarget target, long time) {
          BlockPos blockPos = target.getTarget().currentBlockPosition();
 diff --git a/net/minecraft/world/entity/ai/behavior/SetClosestHomeAsWalkTarget.java b/net/minecraft/world/entity/ai/behavior/SetClosestHomeAsWalkTarget.java
-index 4f9f3367b1ca3903df03a80fa2b01a3d24e6e77d..98036889e3914f6f6522e4f9a2a3e583ee854ef4 100644
+index 4f9f3367b1ca3903df03a80fa2b01a3d24e6e77d..58d4a6aa974211c5eb02d5e6265088b14d2e1041 100644
 --- a/net/minecraft/world/entity/ai/behavior/SetClosestHomeAsWalkTarget.java
 +++ b/net/minecraft/world/entity/ai/behavior/SetClosestHomeAsWalkTarget.java
 @@ -60,17 +60,20 @@ public class SetClosestHomeAsWalkTarget {
@@ -224,7 +224,7 @@ index 4f9f3367b1ca3903df03a80fa2b01a3d24e6e77d..98036889e3914f6f6522e4f9a2a3e583
                                      )
                                      .collect(Collectors.toSet());
 +                                // Kaiiju start - petal - Async path processing
-+                                if (Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++                                if (Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                                    // await on path async
 +                                    Path possiblePath = AcquirePoi.findPathToPois(mob, set);
 +
@@ -291,7 +291,7 @@ index 73bba480f3f017a8aed14562bd82ba33db04391c..ed73a102d1ca58d0c2d4ea6d71551128
                      Node node = path.getNode(i);
                      this.doorPos = new BlockPos(node.x, node.y + 1, node.z);
 diff --git a/net/minecraft/world/entity/ai/navigation/AmphibiousPathNavigation.java b/net/minecraft/world/entity/ai/navigation/AmphibiousPathNavigation.java
-index 458ceec68ca138b0aa9b70d6c934473c01d468f4..a2dd01c9bf990f06f62c1edf13f1c25d2a09d92f 100644
+index 458ceec68ca138b0aa9b70d6c934473c01d468f4..1827a79b7c3bb24ece99488a284123a6ccb70159 100644
 --- a/net/minecraft/world/entity/ai/navigation/AmphibiousPathNavigation.java
 +++ b/net/minecraft/world/entity/ai/navigation/AmphibiousPathNavigation.java
 @@ -12,9 +12,25 @@ public class AmphibiousPathNavigation extends PathNavigation {
@@ -313,7 +313,7 @@ index 458ceec68ca138b0aa9b70d6c934473c01d468f4..a2dd01c9bf990f06f62c1edf13f1c25d
      protected PathFinder createPathFinder(int maxVisitedNodes) {
          this.nodeEvaluator = new AmphibiousNodeEvaluator(false);
 +        // Kaiiju start - petal - async path processing
-+        if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++        if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +            return new PathFinder(this.nodeEvaluator, maxVisitedNodes, nodeEvaluatorGenerator);
 +        }
 +        // Kaiiju end
@@ -321,7 +321,7 @@ index 458ceec68ca138b0aa9b70d6c934473c01d468f4..a2dd01c9bf990f06f62c1edf13f1c25d
      }
  
 diff --git a/net/minecraft/world/entity/ai/navigation/FlyingPathNavigation.java b/net/minecraft/world/entity/ai/navigation/FlyingPathNavigation.java
-index 077863b758fbc3e51f25bcf842d00a2cc07c6a2f..e7a9987ffb4830638b18e82ad38134e4614baad9 100644
+index 077863b758fbc3e51f25bcf842d00a2cc07c6a2f..9307a36aea0b8b29ea44327b1417626c292b29ef 100644
 --- a/net/minecraft/world/entity/ai/navigation/FlyingPathNavigation.java
 +++ b/net/minecraft/world/entity/ai/navigation/FlyingPathNavigation.java
 @@ -16,9 +16,26 @@ public class FlyingPathNavigation extends PathNavigation {
@@ -344,7 +344,7 @@ index 077863b758fbc3e51f25bcf842d00a2cc07c6a2f..e7a9987ffb4830638b18e82ad38134e4
      protected PathFinder createPathFinder(int maxVisitedNodes) {
          this.nodeEvaluator = new FlyNodeEvaluator();
 +        // Kaiiju start - petal - async path processing
-+        if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++        if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +            return new PathFinder(this.nodeEvaluator, maxVisitedNodes, nodeEvaluatorGenerator);
 +        }
 +        // Kaiiju end
@@ -360,7 +360,7 @@ index 077863b758fbc3e51f25bcf842d00a2cc07c6a2f..e7a9987ffb4830638b18e82ad38134e4
          if (!this.isDone()) {
              if (this.canUpdatePath()) {
 diff --git a/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java b/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
-index 86fccf3617a32f3791b03d8067e2eaf6b8d8bebb..eec21c57c3ba9440ab097b1618483a530599487b 100644
+index 86fccf3617a32f3791b03d8067e2eaf6b8d8bebb..0fa5f352a97679f8015eccb55220ee313009ae35 100644
 --- a/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
 +++ b/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
 @@ -24,9 +24,25 @@ public class GroundPathNavigation extends PathNavigation {
@@ -382,7 +382,7 @@ index 86fccf3617a32f3791b03d8067e2eaf6b8d8bebb..eec21c57c3ba9440ab097b1618483a53
      protected PathFinder createPathFinder(int maxVisitedNodes) {
          this.nodeEvaluator = new WalkNodeEvaluator();
 +        // Kaiiju start - petal - async path processing
-+        if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++        if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +            return new PathFinder(this.nodeEvaluator, maxVisitedNodes, nodeEvaluatorGenerator);
 +        }
 +        // Kaiiju end
@@ -390,7 +390,7 @@ index 86fccf3617a32f3791b03d8067e2eaf6b8d8bebb..eec21c57c3ba9440ab097b1618483a53
      }
  
 diff --git a/net/minecraft/world/entity/ai/navigation/PathNavigation.java b/net/minecraft/world/entity/ai/navigation/PathNavigation.java
-index dd1a95111d965bcd7f53be9d4224dd213e4e0705..40de44b0341f8bc8ba5e6fbc37d2cf9c1be63361 100644
+index dd1a95111d965bcd7f53be9d4224dd213e4e0705..ccd68fcfd5a07321eccfca0384a542d4e0c65235 100644
 --- a/net/minecraft/world/entity/ai/navigation/PathNavigation.java
 +++ b/net/minecraft/world/entity/ai/navigation/PathNavigation.java
 @@ -169,6 +169,10 @@ public abstract class PathNavigation {
@@ -409,7 +409,7 @@ index dd1a95111d965bcd7f53be9d4224dd213e4e0705..40de44b0341f8bc8ba5e6fbc37d2cf9c
              PathNavigationRegion pathNavigationRegion = new PathNavigationRegion(this.level, blockPos.offset(-i, -i, -i), blockPos.offset(i, i, i));
              Path path = this.pathFinder.findPath(pathNavigationRegion, this.mob, targets, followRange, accuracy, this.maxVisitedNodesMultiplier);
 +            // Kaiiju start - petal - async path processing
-+            if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++            if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                // assign early a target position. most calls will only have 1 position
 +                if (!targets.isEmpty()) this.targetPos = targets.iterator().next();
 +
@@ -472,7 +472,7 @@ index dd1a95111d965bcd7f53be9d4224dd213e4e0705..40de44b0341f8bc8ba5e6fbc37d2cf9c
              Vec3 vec3 = new Vec3((endNode.x + this.mob.getX()) / 2.0, (endNode.y + this.mob.getY()) / 2.0, (endNode.z + this.mob.getZ()) / 2.0);
              return pos.closerToCenterThan(vec3, this.path.getNodeCount() - this.path.getNextNodeIndex());
 diff --git a/net/minecraft/world/entity/ai/navigation/WaterBoundPathNavigation.java b/net/minecraft/world/entity/ai/navigation/WaterBoundPathNavigation.java
-index ea0f6a19e4a79538e68917ba86cbc98be4dbca8d..376b8ffb6bbb84df1007adbebd5807845bed0937 100644
+index ea0f6a19e4a79538e68917ba86cbc98be4dbca8d..66d19d64406733e34359711f2da47edf698b0e54 100644
 --- a/net/minecraft/world/entity/ai/navigation/WaterBoundPathNavigation.java
 +++ b/net/minecraft/world/entity/ai/navigation/WaterBoundPathNavigation.java
 @@ -15,11 +15,27 @@ public class WaterBoundPathNavigation extends PathNavigation {
@@ -496,7 +496,7 @@ index ea0f6a19e4a79538e68917ba86cbc98be4dbca8d..376b8ffb6bbb84df1007adbebd580784
          this.nodeEvaluator = new SwimNodeEvaluator(this.allowBreaching);
          this.nodeEvaluator.setCanPassDoors(false);
 +        // Kaiiju start - async path processing
-+        if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++        if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +            return new PathFinder(this.nodeEvaluator, maxVisitedNodes, nodeEvaluatorGenerator);
 +        }
 +        // Kaiiju end
@@ -504,7 +504,7 @@ index ea0f6a19e4a79538e68917ba86cbc98be4dbca8d..376b8ffb6bbb84df1007adbebd580784
      }
  
 diff --git a/net/minecraft/world/entity/ai/sensing/NearestBedSensor.java b/net/minecraft/world/entity/ai/sensing/NearestBedSensor.java
-index 066faa704338c573472381e1ebd063e0d52aaaa4..211f54def3f6c780abf146b5121734edbc4f97dc 100644
+index 066faa704338c573472381e1ebd063e0d52aaaa4..ad71e97e6897023b5e48862c2f456737c63716e2 100644
 --- a/net/minecraft/world/entity/ai/sensing/NearestBedSensor.java
 +++ b/net/minecraft/world/entity/ai/sensing/NearestBedSensor.java
 @@ -57,17 +57,32 @@ public class NearestBedSensor extends Sensor<Mob> {
@@ -522,7 +522,7 @@ index 066faa704338c573472381e1ebd063e0d52aaaa4..211f54def3f6c780abf146b5121734ed
 -            } else if (this.triedCount < 5) {
 -                this.batchCache.long2LongEntrySet().removeIf(entry -> entry.getLongValue() < this.lastUpdate);
 +            // Kaiiju start - await on async path processing
-+            if (Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++            if (Boolean.TRUE.equals(level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                Path possiblePath = AcquirePoi.findPathToPois(entity, new java.util.HashSet<>(poiposes));
 +                org.wrd.chrona.async.entity.path.AsyncPathProcessor.awaitProcessing(possiblePath, path -> {
 +                    processPath(entity, poiManager, path);
@@ -550,7 +550,7 @@ index 066faa704338c573472381e1ebd063e0d52aaaa4..211f54def3f6c780abf146b5121734ed
 +    // Chrona end - Kaiiju - await on async path processing
  }
 diff --git a/net/minecraft/world/entity/animal/Bee.java b/net/minecraft/world/entity/animal/Bee.java
-index 13f24836649790a34b988e2d63accb043e6ff080..105bcf912025b7ab1c71f30d05cc3ad600a332e8 100644
+index 13f24836649790a34b988e2d63accb043e6ff080..1c430a4d6de4701925186f8c82e82772f210b078 100644
 --- a/net/minecraft/world/entity/animal/Bee.java
 +++ b/net/minecraft/world/entity/animal/Bee.java
 @@ -858,6 +858,14 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
@@ -560,7 +560,7 @@ index 13f24836649790a34b988e2d63accb043e6ff080..105bcf912025b7ab1c71f30d05cc3ad6
 +                        // Chrona start - async path processing fix
 +                        // Wait for path processing before making navigation decisions
 +                        Path currentPath = Bee.this.navigation.getPath();
-+                        if (Boolean.TRUE.equals(Bee.this.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue()) && currentPath != null && !currentPath.isProcessed()) {
++                        if (Boolean.TRUE.equals(Bee.this.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()) && currentPath != null && !currentPath.isProcessed()) {
 +                            return;
 +                        }
 +                        // Chrona end - async path processing fix
@@ -578,7 +578,7 @@ index 13f24836649790a34b988e2d63accb043e6ff080..105bcf912025b7ab1c71f30d05cc3ad6
          }
      }
 diff --git a/net/minecraft/world/entity/animal/Rabbit.java b/net/minecraft/world/entity/animal/Rabbit.java
-index ac99590dad689f2cfffb9b9e2465f6a252d41e9c..a4b05a0cf4cfcfa3eb38b80e7015982bbfda3e4d 100644
+index ac99590dad689f2cfffb9b9e2465f6a252d41e9c..bb72d52dc20dc998a9f55c53c0649f81759528f5 100644
 --- a/net/minecraft/world/entity/animal/Rabbit.java
 +++ b/net/minecraft/world/entity/animal/Rabbit.java
 @@ -509,6 +509,14 @@ public class Rabbit extends Animal {
@@ -586,7 +586,7 @@ index ac99590dad689f2cfffb9b9e2465f6a252d41e9c..a4b05a0cf4cfcfa3eb38b80e7015982b
          @Override
          public void tick() {
 +            // Chrona start - async pathfinding - don't make movement decisions with unprocessed paths
-+            if (Boolean.TRUE.equals(this.rabbit.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++            if (Boolean.TRUE.equals(this.rabbit.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                Path path = this.rabbit.getNavigation().getPath();
 +                if (path != null && !path.isProcessed()) {
 +                    return; // Wait for path processing before making movement decisions
@@ -597,7 +597,7 @@ index ac99590dad689f2cfffb9b9e2465f6a252d41e9c..a4b05a0cf4cfcfa3eb38b80e7015982b
                  this.rabbit.setSpeedModifier(0.0);
              } else if (this.hasWanted() || this.operation == MoveControl.Operation.JUMPING) {
 diff --git a/net/minecraft/world/entity/animal/frog/Frog.java b/net/minecraft/world/entity/animal/frog/Frog.java
-index 66f503e045ccb0985ec718b39be07eea538fad8d..2401e78408f30b8c6a10c2d3369b140c27a6b83d 100644
+index 66f503e045ccb0985ec718b39be07eea538fad8d..9e37c098016984b0816a1b8d96d7114a14cbd17b 100644
 --- a/net/minecraft/world/entity/animal/frog/Frog.java
 +++ b/net/minecraft/world/entity/animal/frog/Frog.java
 @@ -437,9 +437,25 @@ public class Frog extends Animal {
@@ -619,7 +619,7 @@ index 66f503e045ccb0985ec718b39be07eea538fad8d..2401e78408f30b8c6a10c2d3369b140c
          protected PathFinder createPathFinder(int maxVisitedNodes) {
              this.nodeEvaluator = new Frog.FrogNodeEvaluator(true);
 +            // Kaiiju start - petal - async path processing
-+            if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++            if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                return new PathFinder(this.nodeEvaluator, maxVisitedNodes, nodeEvaluatorGenerator);
 +            }
 +            // Kaiiju end
@@ -640,7 +640,7 @@ index f42f9c232fa588835654de0fdea36b9cdfa34571..b68c3cd814b7f1bce115d193bafacbd7
              if (target != null) {
                  double d = this.distanceToSqr(target.getX(), target.getY(), target.getZ());
 diff --git a/net/minecraft/world/entity/monster/Strider.java b/net/minecraft/world/entity/monster/Strider.java
-index afa584e2aba6bebfb2dd343215b043c983281853..5ccd47df9c334fa7198f7c076db970557a2ec53b 100644
+index afa584e2aba6bebfb2dd343215b043c983281853..f80393975d88aed9e1e961bbe97b20e73fa2f51c 100644
 --- a/net/minecraft/world/entity/monster/Strider.java
 +++ b/net/minecraft/world/entity/monster/Strider.java
 @@ -507,9 +507,25 @@ public class Strider extends Animal implements ItemSteerable {
@@ -662,7 +662,7 @@ index afa584e2aba6bebfb2dd343215b043c983281853..5ccd47df9c334fa7198f7c076db97055
          protected PathFinder createPathFinder(int maxVisitedNodes) {
              this.nodeEvaluator = new WalkNodeEvaluator();
 +            // Kaiiju start - async path processing
-+            if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++            if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                return new PathFinder(this.nodeEvaluator, maxVisitedNodes, nodeEvaluatorGenerator);
 +            }
 +            // Kaiiju end
@@ -670,7 +670,7 @@ index afa584e2aba6bebfb2dd343215b043c983281853..5ccd47df9c334fa7198f7c076db97055
          }
  
 diff --git a/net/minecraft/world/entity/monster/warden/Warden.java b/net/minecraft/world/entity/monster/warden/Warden.java
-index 4a4cc7f9c95d4f4b6ad4948e3ed3504efbbcef15..faf94914414e9f222528d42e7eb51785ad652653 100644
+index 4a4cc7f9c95d4f4b6ad4948e3ed3504efbbcef15..a67bc83f7fa825e549ac4b91cde7f02089ad8f66 100644
 --- a/net/minecraft/world/entity/monster/warden/Warden.java
 +++ b/net/minecraft/world/entity/monster/warden/Warden.java
 @@ -554,6 +554,16 @@ public class Warden extends Monster implements VibrationSystem {
@@ -678,7 +678,7 @@ index 4a4cc7f9c95d4f4b6ad4948e3ed3504efbbcef15..faf94914414e9f222528d42e7eb51785
              protected PathFinder createPathFinder(int maxVisitedNodes) {
                  this.nodeEvaluator = new WalkNodeEvaluator();
 +                // Kaiiju start - petal - async path processing
-+                if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue())) {
++                if (Boolean.TRUE.equals(this.level.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                    return new PathFinder(this.nodeEvaluator, maxVisitedNodes, GroundPathNavigation.nodeEvaluatorGenerator) {
 +                        @Override
 +                        protected float distance(Node first, Node second) {
@@ -721,7 +721,7 @@ index d6d3c8f5e5dd4a8cab0d3fcc131c3a59f06130c6..53a440e53567469e37df5ba00588da9a
      void setDebug(Node[] openSet, Node[] closedSet, Set<Target> targetNodes) {
          this.debugData = new Path.DebugData(openSet, closedSet, targetNodes);
 diff --git a/net/minecraft/world/level/pathfinder/PathFinder.java b/net/minecraft/world/level/pathfinder/PathFinder.java
-index 81de6c1bbef1cafd3036e736dd305fbedc8368c6..648c9d1357c63974729d657d34017a34ebdfba2b 100644
+index 81de6c1bbef1cafd3036e736dd305fbedc8368c6..4b82300ac147cfcabb022e2fa4b4634db0ffabd5 100644
 --- a/net/minecraft/world/level/pathfinder/PathFinder.java
 +++ b/net/minecraft/world/level/pathfinder/PathFinder.java
 @@ -25,10 +25,18 @@ public class PathFinder {
@@ -751,7 +751,7 @@ index 81de6c1bbef1cafd3036e736dd305fbedc8368c6..648c9d1357c63974729d657d34017a34
 -        this.openSet.clear();
 -        this.nodeEvaluator.prepare(region, mob);
 -        Node start = this.nodeEvaluator.getStart();
-+        if (Boolean.FALSE.equals(mob.getServer().chronaConfiguration.optimizationAsyncPathfindingEnabled.getValue()))
++        if (Boolean.FALSE.equals(mob.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()))
 +            this.openSet.clear(); // Kaiiju - petal - it's always cleared in processPath
 +        // Kaiiju start - petal - use a generated evaluator if we have one otherwise run sync
 +        NodeEvaluator nodeEvaluator = this.nodeEvaluatorGenerator == null

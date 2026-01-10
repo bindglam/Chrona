@@ -79,19 +79,19 @@ public class AsyncPathProcessor {
     }
 
     private static int getMaxPoolSize(ChronaConfiguration config) {
-        return config.optimizationAsyncPathfindingMaxThreads.getValue() <= 0
+        return config.optimization.async.pathfinding.maxThreads.getValue() <= 0
                 ? Math.max(Runtime.getRuntime().availableProcessors() / 4, 1)
-                : config.optimizationAsyncPathfindingMaxThreads.getValue();
+                : config.optimization.async.pathfinding.maxThreads.getValue();
     }
 
     private static long getKeepAliveTime(ChronaConfiguration config) {
-        return config.optimizationAsyncPathfindingKeepalive.getValue();
+        return config.optimization.async.pathfinding.keepalive.getValue();
     }
 
     private static BlockingQueue<Runnable> getQueueImpl(ChronaConfiguration config) {
-        final int queueCapacity = config.optimizationAsyncPathfindingQueueSize.getValue() <= 0
+        final int queueCapacity = config.optimization.async.pathfinding.queueSize.getValue() <= 0
                 ? getMaxPoolSize(config) * 256
-                : config.optimizationAsyncPathfindingQueueSize.getValue();
+                : config.optimization.async.pathfinding.queueSize.getValue();
 
         return new LinkedBlockingQueue<>(queueCapacity);
     }
@@ -108,7 +108,7 @@ public class AsyncPathProcessor {
         return (Runnable rejectedTask, ThreadPoolExecutor executor) -> {
             BlockingQueue<Runnable> workQueue = executor.getQueue();
             if (!executor.isShutdown()) {
-                switch (PathfindTaskRejectPolicy.valueOf(config.optimizationAsyncPathfindingRejectPolicy.getValue())) {
+                switch (PathfindTaskRejectPolicy.valueOf(config.optimization.async.pathfinding.rejectPolicy.getValue())) {
                     case FLUSH_ALL -> {
                         if (!workQueue.isEmpty()) {
                             List<Runnable> pendingTasks = new ArrayList<>(workQueue.size());
