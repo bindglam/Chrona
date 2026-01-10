@@ -1,0 +1,52 @@
+--- a/net/minecraft/world/phys/AABB.java
++++ b/net/minecraft/world/phys/AABB.java
+@@ -19,6 +_,15 @@
+     public final double maxY;
+     public final double maxZ;
+ 
++    // Chrona start - Lithium
++    static {
++        assert Direction.Axis.X.ordinal() == 0;
++        assert Direction.Axis.Y.ordinal() == 1;
++        assert Direction.Axis.Z.ordinal() == 2;
++        assert Direction.Axis.values().length == 3;
++    }
++    // Chrona end - Lithium
++
+     public AABB(double x1, double y1, double z1, double x2, double y2, double z2) {
+         this.minX = Math.min(x1, x2);
+         this.minY = Math.min(y1, y2);
+@@ -80,11 +_,31 @@
+     }
+ 
+     public double min(Direction.Axis axis) {
+-        return axis.choose(this.minX, this.minY, this.minZ);
++        // Chrona start - Lithium
++        return switch (axis.ordinal()) {
++            case 0 -> //X
++                    this.minX;
++            case 1 -> //Y
++                    this.minY;
++            case 2 -> //Z
++                    this.minZ;
++            default -> throw new IllegalArgumentException();
++        };
++        // Chrona end - Lithium
+     }
+ 
+     public double max(Direction.Axis axis) {
+-        return axis.choose(this.maxX, this.maxY, this.maxZ);
++        // Chrona start - Lithium
++        return switch (axis.ordinal()) {
++            case 0 -> //X
++                    this.maxX;
++            case 1 -> //Y
++                    this.maxY;
++            case 2 -> //Z
++                    this.maxZ;
++            default -> throw new IllegalArgumentException();
++        };
++        // Chrona end - Lithium
+     }
+ 
+     @Override
