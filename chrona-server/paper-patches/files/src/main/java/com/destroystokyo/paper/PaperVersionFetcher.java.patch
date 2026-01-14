@@ -6,12 +6,12 @@
      private static final int DISTANCE_UNKNOWN = -2;
 -    private static final String DOWNLOAD_PAGE = "https://papermc.io/downloads/paper";
 -    private static final String REPOSITORY = "PaperMC/Paper";
-+    private static final String DOWNLOAD_PAGE = "https://chrona.weirdhub.xyz/"; // Chrona
++    private static final String DOWNLOAD_PAGE = "https://chrona.weirdhub.xyz"; // Chrona
 +    private static final String REPOSITORY = "bindglam/Chrona"; // Chrona
-     private static final ServerBuildInfo BUILD_INFO;
-     private static final String USER_AGENT;
+     private static final ServerBuildInfo BUILD_INFO = ServerBuildInfo.buildInfo();
+     private static final String USER_AGENT = BUILD_INFO.brandName() + "/" + BUILD_INFO.asString(VERSION_SIMPLE) + " (https://papermc.io)";
      private static final Gson GSON = new Gson();
-@@ -62,7 +_,7 @@
+@@ -57,7 +_,7 @@
          if (BUILD_INFO.buildNumber().isEmpty() && BUILD_INFO.gitCommit().isEmpty()) {
              updateMessage = text("You are running a development version without access to version information", color(0xFF5300));
          } else {
@@ -20,7 +20,7 @@
          }
          final @Nullable Component history = this.getHistory();
  
-@@ -114,16 +_,18 @@
+@@ -109,16 +_,18 @@
      private static Component getUpdateStatusMessage() {
          int distance = DISTANCE_ERROR;
  
@@ -40,18 +40,18 @@
  
          return switch (distance) {
              case DISTANCE_ERROR -> text("Error obtaining version information", NamedTextColor.YELLOW);
-@@ -199,7 +_,7 @@
+@@ -194,7 +_,7 @@
  
      private static int fetchDistanceFromSiteApi(final int jenkinsBuild) {
          try {
--            final URL buildsUrl = URI.create("https://fill.papermc.io/v3/projects/paper/versions/" + PaperVersionFetcher.BUILD_INFO.minecraftVersionId()).toURL();
-+            final URL buildsUrl = URI.create("https://api.example.com/nonexistent/" + PaperVersionFetcher.BUILD_INFO.minecraftVersionId()).toURL(); // Chrona
+-            final URL buildsUrl = URI.create("https://fill.papermc.io/v3/projects/paper/versions/" + PaperVersionFetcher.BUILD_INFO.minecraftVersionId() + "/builds").toURL();
++            final URL buildsUrl = URI.create("https://api.example.com/nonexistent/" + PaperVersionFetcher.BUILD_INFO.minecraftVersionId() + "/builds").toURL(); // Chrona
              final HttpURLConnection connection = (HttpURLConnection) buildsUrl.openConnection();
              connection.setConnectTimeout(5000);
              connection.setReadTimeout(5000);
-@@ -214,7 +_,7 @@
+@@ -208,7 +_,7 @@
                      .orElseThrow();
-                 return latest - jenkinsBuild;
+                 return Math.max(latest - jenkinsBuild, 0);
              } catch (final JsonSyntaxException ex) {
 -                LOGGER.error("Error parsing json from Paper's downloads API", ex);
 +                LOGGER.error("Error parsing json from Chrona's downloads API", ex); // Chrona
