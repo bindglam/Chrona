@@ -32,7 +32,7 @@ index dc65503a2d785d64d37b76b0303f51cf66d9769a..af12ec029249b10fc82952b383b21d15
              Profiler.get().push("scheduledFunctions");
              this.serverLevelData.getScheduledEvents().tick(this.server, l);
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 8463c43e7128d529c71bf6828cdf868661c65f6e..f677dc1ef8cc031f5eb94e92edc48faab1c384d0 100644
+index 8463c43e7128d529c71bf6828cdf868661c65f6e..cc6ba1f81b4defd00a86f95259ca195e77511922 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
 @@ -514,6 +514,12 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
@@ -40,7 +40,7 @@ index 8463c43e7128d529c71bf6828cdf868661c65f6e..f677dc1ef8cc031f5eb94e92edc48faa
  
          this.tickEffects();
 +        // Chrona start - Minimize TPS lag
-+        if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue())) {
++        if(Boolean.TRUE.equals(this.level().getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue())) {
 +            for (int i = 0; i < org.wrd.chrona.tick.TickCalculator.getMissedTicks(); i++)
 +                this.tickEffects();
 +        }
@@ -49,7 +49,7 @@ index 8463c43e7128d529c71bf6828cdf868661c65f6e..f677dc1ef8cc031f5eb94e92edc48faa
          this.yBodyRotO = this.yBodyRot;
          this.yRotO = this.getYRot();
 diff --git a/net/minecraft/world/entity/item/ItemEntity.java b/net/minecraft/world/entity/item/ItemEntity.java
-index e82bb8f2d2b0e771dc371fd7e709116e1f5f204f..f898fd37b7076908fa5c5e9fd3edc36960b06b16 100644
+index e82bb8f2d2b0e771dc371fd7e709116e1f5f204f..287c25e8b3a767463b26bd228f827eb79a00959d 100644
 --- a/net/minecraft/world/entity/item/ItemEntity.java
 +++ b/net/minecraft/world/entity/item/ItemEntity.java
 @@ -123,6 +123,10 @@ public class ItemEntity extends Entity implements TraceableEntity {
@@ -57,7 +57,7 @@ index e82bb8f2d2b0e771dc371fd7e709116e1f5f204f..f898fd37b7076908fa5c5e9fd3edc369
          if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
              this.pickupDelay--;
 +            // Chrona start - Minimize TPS lag
-+            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue()))
++            if(Boolean.TRUE.equals(this.level().getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue()))
 +                this.pickupDelay -= org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +            // Chrona end - Minimize TPS lag
          }
@@ -68,14 +68,14 @@ index e82bb8f2d2b0e771dc371fd7e709116e1f5f204f..f898fd37b7076908fa5c5e9fd3edc369
              if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
                  this.pickupDelay--;
 +                // Chrona start - Minimize TPS lag
-+                if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue()))
++                if(Boolean.TRUE.equals(this.level().getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue()))
 +                    this.pickupDelay -= org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +                // Chrona end - Minimize TPS lag
              }
  
              this.xo = this.getX();
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index 7bf160cef8bd772d27d4a71f04d5d9861ef67984..ab65dbf74c90405764bfcd239abec509512cc5c8 100644
+index 7bf160cef8bd772d27d4a71f04d5d9861ef67984..417bc60dc9b5f67e0fa4e8348e7edec71471dfeb 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
 @@ -256,6 +256,10 @@ public abstract class Player extends Avatar implements ContainerUser {
@@ -83,7 +83,7 @@ index 7bf160cef8bd772d27d4a71f04d5d9861ef67984..ab65dbf74c90405764bfcd239abec509
          if (this.isSleeping()) {
              this.sleepCounter++;
 +            // Chrona start - Minimize TPS lag
-+            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue()))
++            if(Boolean.TRUE.equals(this.level().getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue()))
 +                this.sleepCounter += org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +            // Chrona end - Minimize TPS lag
              // Paper start - Add PlayerDeepSleepEvent
