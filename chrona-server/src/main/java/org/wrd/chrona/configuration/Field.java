@@ -1,15 +1,15 @@
 package org.wrd.chrona.configuration;
 
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 public final class Field<T> {
     private final String path;
-    private final @Nullable T defaultValue;
+    private final @NotNull T defaultValue;
     private final Configuration configuration;
 
-    private @Nullable T value;
+    private T value;
 
-    public Field(String path, @Nullable T defaultValue, Configuration configuration) {
+    public Field(String path, @NotNull T defaultValue, Configuration configuration) {
         this.path = path;
         this.defaultValue = defaultValue;
         this.configuration = configuration;
@@ -19,7 +19,7 @@ public final class Field<T> {
     public void load() {
         value = (T) configuration.getConfig().get(path);
 
-        if(value == null && defaultValue != null) {
+        if(value == null) {
             value = defaultValue;
 
             configuration.getConfig().set(path, defaultValue);
@@ -30,11 +30,11 @@ public final class Field<T> {
         return path;
     }
 
-    public @Nullable T getDefaultValue() {
+    public @NotNull T getDefaultValue() {
         return defaultValue;
     }
 
-    public @Nullable T getValue() {
+    public @NotNull T getValue() {
         if(value == null)
             load();
 
