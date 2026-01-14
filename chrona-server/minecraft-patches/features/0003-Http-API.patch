@@ -5,7 +5,7 @@ Subject: [PATCH] Http API
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 604f0100356dfd0bc9805005789288529888abc7..9267a7aa6e68de48adf7cf8e97358e4b7526e8ac 100644
+index 604f0100356dfd0bc9805005789288529888abc7..18adab263c9b2ea5565437e82d9b8b7c40ae545e 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -307,6 +307,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -13,7 +13,7 @@ index 604f0100356dfd0bc9805005789288529888abc7..9267a7aa6e68de48adf7cf8e97358e4b
      private final Set<String> pluginsBlockingSleep = new java.util.HashSet<>(); // Paper - API to allow/disallow tick sleeping
      public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
 +    // Chrona start - Http server
-+    @Nullable
++    @org.jetbrains.annotations.Nullable
 +    public org.wrd.chrona.util.Threaded<org.wrd.chrona.http.ApiServer> httpServer;
 +    // Chrona end - Http server
      // Paper start - improve tick loop
