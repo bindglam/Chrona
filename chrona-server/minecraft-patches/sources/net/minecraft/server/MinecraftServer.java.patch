@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -300,6 +_,7 @@
+@@ -303,6 +_,7 @@
      public volatile boolean abnormalExit; // Paper - Improved watchdog support
      public volatile Thread shutdownThread; // Paper - Improved watchdog support
      public final io.papermc.paper.configuration.PaperConfigurations paperConfigurations; // Paper - add paper configuration files
@@ -8,11 +8,11 @@
      public boolean isIteratingOverLevels = false; // Paper - Throw exception on world create while being ticked
      private final Set<String> pluginsBlockingSleep = new java.util.HashSet<>(); // Paper - API to allow/disallow tick sleeping
      public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
-@@ -471,6 +_,7 @@
+@@ -564,6 +_,7 @@
          Runtime.getRuntime().addShutdownHook(new org.bukkit.craftbukkit.util.ServerShutdownThread(this));
          // CraftBukkit end
-         this.paperConfigurations = services.paperConfigurations(); // Paper - add paper configuration files
+         this.paperConfigurations = services.paper().configurations(); // Paper - add paper configuration files
 +        this.chronaConfiguration = new org.wrd.chrona.configuration.ChronaConfiguration(); // Chrona - add chrona configuration file
      }
  
-     private void readScoreboard(DimensionDataStorage dataStorage) {
+     protected abstract boolean initServer() throws IOException;

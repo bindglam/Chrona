@@ -1,9 +1,9 @@
 --- a/net/minecraft/world/entity/projectile/Projectile.java
 +++ b/net/minecraft/world/entity/projectile/Projectile.java
-@@ -50,6 +_,54 @@
-         super(entityType, level);
+@@ -49,6 +_,52 @@
+     protected Projectile(EntityType<? extends Projectile> type, Level level) {
+         super(type, level);
      }
- 
 +    // Gale start - Airplane - reduce projectile chunk loading
 +    private static int chunksLoadedThisTick = 0;
 +    private static int chunksLoadedInTick;
@@ -25,18 +25,18 @@
 +            boolean isLoaded = ((net.minecraft.server.level.ServerChunkCache)
 +                    this.level().getChunkSource()).getChunkAtIfLoadedImmediately(newX, newZ) != null;
 +            if (!isLoaded) {
-+                int maxChunkLoadsPerTick = getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perTick.getValue();
++                int maxChunkLoadsPerTick = this.level().getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perTick.getValue();
 +
 +                if (maxChunkLoadsPerTick >= 0 && chunksLoadedThisTick > maxChunkLoadsPerTick) {
 +                    return;
 +                }
 +
-+                int maxChunkLoadsPerProjectile = getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.max.getValue();
++                int maxChunkLoadsPerProjectile = this.level().getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.max.getValue();
 +
 +                if (maxChunkLoadsPerProjectile >= 0 && this.chunksLoadedByProjectile >= maxChunkLoadsPerProjectile) {
-+                    if (Boolean.TRUE.equals(getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.removeFromWorldAfterReachLimit.getValue())) {
++                    if (Boolean.TRUE.equals(this.level().getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.removeFromWorldAfterReachLimit.getValue())) {
 +                        this.discard();
-+                    } else if (Boolean.TRUE.equals(getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.resetMovementAfterReachLimit.getValue())) {
++                    } else if (Boolean.TRUE.equals(this.level().getServer().chronaConfiguration.optimization.maxProjectileChunkLoads.perProjectile.resetMovementAfterReachLimit.getValue())) {
 +                        this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
 +                    }
 +
@@ -47,11 +47,9 @@
 +                this.chunksLoadedByProjectile++;
 +            }
 +        }
-+
 +        super.setPos(x, y, z);
 +    }
 +    // Gale end - Airplane - reduce projectile chunk loading
-+
+ 
      protected void setOwner(@Nullable EntityReference<Entity> owner) {
          this.owner = owner;
-     }

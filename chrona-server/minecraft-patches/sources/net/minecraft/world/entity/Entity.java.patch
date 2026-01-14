@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -262,6 +_,7 @@
+@@ -265,6 +_,7 @@
      public float yRotO;
      public float xRotO;
      private AABB bb = INITIAL_AABB;
@@ -8,7 +8,7 @@
      public boolean onGround;
      public boolean horizontalCollision;
      public boolean verticalCollision;
-@@ -1092,6 +_,11 @@
+@@ -1112,6 +_,11 @@
      // Paper end - detailed watchdog information
  
      public void move(MoverType type, Vec3 movement) {
@@ -20,7 +20,7 @@
          final Vec3 originalMovement = movement; // Paper - Expose pre-collision velocity
          // Paper start - detailed watchdog information
          ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("Cannot move an entity off-main");
-@@ -4388,6 +_,7 @@
+@@ -4453,6 +_,7 @@
      }
  
      public final void setBoundingBox(AABB bb) {

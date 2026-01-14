@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/Block.java
 +++ b/net/minecraft/world/level/block/Block.java
-@@ -610,7 +_,19 @@
+@@ -659,7 +_,19 @@
      }
      // CraftBukkit end
  
@@ -21,7 +21,7 @@
          @Override
          public boolean equals(Object other) {
              return other instanceof Block.ShapePairKey shapePairKey && this.first == shapePairKey.first && this.second == shapePairKey.second;
-@@ -618,7 +_,7 @@
+@@ -667,7 +_,7 @@
  
          @Override
          public int hashCode() {
@@ -29,4 +29,4 @@
 +            return this.hash; // Gale - cache ShapePairKey hash
          }
      }
- }
+ 

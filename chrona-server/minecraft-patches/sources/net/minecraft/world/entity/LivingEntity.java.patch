@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -2698,6 +_,7 @@
+@@ -2773,6 +_,7 @@
      }
  
      protected void updateSwingTime() {
@@ -8,11 +8,11 @@
          int currentSwingDuration = this.getCurrentSwingDuration();
          if (this.swinging) {
              this.swingTime++;
-@@ -3605,6 +_,7 @@
+@@ -3775,6 +_,7 @@
      protected void updateFallFlying() {
          this.checkFallDistanceAccumulation();
-         if (!this.level().isClientSide) {
+         if (!this.level().isClientSide()) {
 +            if (!this.isFallFlying() && this.fallFlyTicks == 0) return; // Chrona - Lithium
              if (!this.canGlide()) {
-                 if (this.getSharedFlag(7) != false && !CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
-                 this.setSharedFlag(7, false);
+                 if (this.getSharedFlag(Entity.FLAG_FALL_FLYING) && !CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
+                 this.setSharedFlag(Entity.FLAG_FALL_FLYING, false);

@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/levelgen/blending/Blender.java
 +++ b/net/minecraft/world/level/levelgen/blending/Blender.java
-@@ -144,7 +_,7 @@
+@@ -149,7 +_,7 @@
      private static double heightToOffset(double height) {
          double d = 1.0;
          double d1 = height + 0.5;
