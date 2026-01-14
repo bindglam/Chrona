@@ -550,7 +550,7 @@ index 066faa704338c573472381e1ebd063e0d52aaaa4..ad71e97e6897023b5e48862c2f456737
 +    // Chrona end - Kaiiju - await on async path processing
  }
 diff --git a/net/minecraft/world/entity/animal/bee/Bee.java b/net/minecraft/world/entity/animal/bee/Bee.java
-index 0cbcf23b6edba2305dfbbc95abb06a90a6edd42b..5db1035001d0c097b863be46dd57398267aa170f 100644
+index 0cbcf23b6edba2305dfbbc95abb06a90a6edd42b..dab807c9625664bcb64a0da0f6d09e9ec4d58985 100644
 --- a/net/minecraft/world/entity/animal/bee/Bee.java
 +++ b/net/minecraft/world/entity/animal/bee/Bee.java
 @@ -856,6 +856,14 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
@@ -560,7 +560,7 @@ index 0cbcf23b6edba2305dfbbc95abb06a90a6edd42b..5db1035001d0c097b863be46dd573982
 +                        // Chrona start - async path processing fix
 +                        // Wait for path processing before making navigation decisions
 +                        Path currentPath = Bee.this.navigation.getPath();
-+                        if (Boolean.TRUE.equals(Bee.this.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()) && currentPath != null && !currentPath.isProcessed()) {
++                        if (Boolean.TRUE.equals(Bee.this.level().getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()) && currentPath != null && !currentPath.isProcessed()) {
 +                            return;
 +                        }
 +                        // Chrona end - async path processing fix
@@ -608,7 +608,7 @@ index 09d817aa34d4a6d8a49d614087f9942d75e673e8..8a81c00ea65ca248030cdcc36746171e
          }
      }
 diff --git a/net/minecraft/world/entity/animal/rabbit/Rabbit.java b/net/minecraft/world/entity/animal/rabbit/Rabbit.java
-index 17e58836d18afc7cfcc1cf7a8ac5b9e66ceb5f0d..cecbf5dee18b5629ccd19423fe6d9303253ede48 100644
+index 17e58836d18afc7cfcc1cf7a8ac5b9e66ceb5f0d..b8f4be628bbe9804a212aaa34194d8cc59df7d6e 100644
 --- a/net/minecraft/world/entity/animal/rabbit/Rabbit.java
 +++ b/net/minecraft/world/entity/animal/rabbit/Rabbit.java
 @@ -509,6 +509,14 @@ public class Rabbit extends Animal {
@@ -616,7 +616,7 @@ index 17e58836d18afc7cfcc1cf7a8ac5b9e66ceb5f0d..cecbf5dee18b5629ccd19423fe6d9303
          @Override
          public void tick() {
 +            // Chrona start - async pathfinding - don't make movement decisions with unprocessed paths
-+            if (Boolean.TRUE.equals(this.rabbit.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
++            if (Boolean.TRUE.equals(this.rabbit.level().getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue())) {
 +                Path path = this.rabbit.getNavigation().getPath();
 +                if (path != null && !path.isProcessed()) {
 +                    return; // Wait for path processing before making movement decisions
@@ -691,9 +691,18 @@ index db164101d440c503e2e88b1f31af7f0638faaec5..8be659c2585fe4bfe92912b22023d09a
              if (target != null) {
                  double d = this.distanceToSqr(target.getX(), target.getY(), target.getZ());
 diff --git a/net/minecraft/world/level/pathfinder/Path.java b/net/minecraft/world/level/pathfinder/Path.java
-index 5959e1b1772ffbdfb108365171fe37cbf56ef825..92aa4b5f3ef06c767e3b8fef5b050d02ca04bf99 100644
+index 5959e1b1772ffbdfb108365171fe37cbf56ef825..53e593de3445eb15ea8ecd9f917062cc83f16389 100644
 --- a/net/minecraft/world/level/pathfinder/Path.java
 +++ b/net/minecraft/world/level/pathfinder/Path.java
+@@ -11,7 +11,7 @@ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.phys.Vec3;
+ import org.jspecify.annotations.Nullable;
+ 
+-public final class Path {
++public class Path { // Chrona
+     public static final StreamCodec<FriendlyByteBuf, Path> STREAM_CODEC = StreamCodec.of((buffer, value) -> value.writeToStream(buffer), Path::createFromStream);
+     public final List<Node> nodes;
+     private Path.@Nullable DebugData debugData;
 @@ -98,11 +98,13 @@ public final class Path {
      }
  
@@ -727,17 +736,17 @@ index 5959e1b1772ffbdfb108365171fe37cbf56ef825..92aa4b5f3ef06c767e3b8fef5b050d02
      void setDebug(Node[] openSet, Node[] closedSet, Set<Target> targetNodes) {
          this.debugData = new Path.DebugData(openSet, closedSet, targetNodes);
 diff --git a/net/minecraft/world/level/pathfinder/PathFinder.java b/net/minecraft/world/level/pathfinder/PathFinder.java
-index 168b475b38b2872b27c1ab15f6846323ac16dd2c..f2c7ec1b470a69b27a3e5a1b91ce3ab9125dc434 100644
+index 168b475b38b2872b27c1ab15f6846323ac16dd2c..12187ab36277d2845ec019cd9c15b43eade9e087 100644
 --- a/net/minecraft/world/level/pathfinder/PathFinder.java
 +++ b/net/minecraft/world/level/pathfinder/PathFinder.java
 @@ -26,10 +26,18 @@ public class PathFinder {
      public final NodeEvaluator nodeEvaluator;
      private final BinaryHeap openSet = new BinaryHeap();
      private BooleanSupplier captureDebug = () -> false;
-+    private final @Nullable org.wrd.chrona.async.entity.path.NodeEvaluatorGenerator nodeEvaluatorGenerator; // Kaiiju - petal - we use this later to generate an evaluator
++    private final @org.jetbrains.annotations.Nullable org.wrd.chrona.async.entity.path.NodeEvaluatorGenerator nodeEvaluatorGenerator; // Kaiiju - petal - we use this later to generate an evaluator
  
 -    public PathFinder(NodeEvaluator nodeEvaluator, int maxVisitedNodes) {
-+    public PathFinder(NodeEvaluator nodeEvaluator, int maxVisitedNodes, @Nullable org.wrd.chrona.async.entity.path.NodeEvaluatorGenerator nodeEvaluatorGenerator) { // Kaiiju - petal - add nodeEvaluatorGenerator
++    public PathFinder(NodeEvaluator nodeEvaluator, int maxVisitedNodes, @org.jetbrains.annotations.Nullable org.wrd.chrona.async.entity.path.NodeEvaluatorGenerator nodeEvaluatorGenerator) { // Kaiiju - petal - add nodeEvaluatorGenerator
          this.nodeEvaluator = nodeEvaluator;
          this.maxVisitedNodes = maxVisitedNodes;
 +        // Kaiiju start - petal - support nodeEvaluatorgenerators
@@ -757,7 +766,7 @@ index 168b475b38b2872b27c1ab15f6846323ac16dd2c..f2c7ec1b470a69b27a3e5a1b91ce3ab9
 -        this.openSet.clear();
 -        this.nodeEvaluator.prepare(region, mob);
 -        Node start = this.nodeEvaluator.getStart();
-+        if (Boolean.FALSE.equals(mob.getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()))
++        if (Boolean.FALSE.equals(mob.level().getServer().chronaConfiguration.optimization.async.pathfinding.enabled.getValue()))
 +            this.openSet.clear(); // Kaiiju - petal - it's always cleared in processPath
 +        // Kaiiju start - petal - use a generated evaluator if we have one otherwise run sync
 +        NodeEvaluator nodeEvaluator = this.nodeEvaluatorGenerator == null

@@ -1,7 +1,7 @@
 package org.wrd.chrona.async.entity.path;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.world.level.pathfinder.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -75,7 +75,7 @@ index e82bb8f2d2b0e771dc371fd7e709116e1f5f204f..287c25e8b3a767463b26bd228f827eb7
  
              this.xo = this.getX();
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index 7bf160cef8bd772d27d4a71f04d5d9861ef67984..417bc60dc9b5f67e0fa4e8348e7edec71471dfeb 100644
+index 7bf160cef8bd772d27d4a71f04d5d9861ef67984..fe9912c50b95a1dad8e86bd0d0dbe68bcdcb8462 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
 @@ -256,6 +256,10 @@ public abstract class Player extends Avatar implements ContainerUser {
@@ -94,7 +94,7 @@ index 7bf160cef8bd772d27d4a71f04d5d9861ef67984..417bc60dc9b5f67e0fa4e8348e7edec7
          } else if (this.sleepCounter > 0) {
              this.sleepCounter++;
 +            // Chrona start - Minimize TPS lag
-+            if(Boolean.TRUE.equals(this.getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue()))
++            if(Boolean.TRUE.equals(this.level().getServer().chronaConfiguration.optimization.minimizeTPSLag.getValue()))
 +                this.sleepCounter += org.wrd.chrona.tick.TickCalculator.getMissedTicks();
 +            // Chrona end - Minimize TPS lag
              if (this.sleepCounter >= 110) {
