@@ -5,10 +5,10 @@ Subject: [PATCH] Minimize TPS lag
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 62ae421128a0238b09ec6ad746daff7178bd5d4c..604f0100356dfd0bc9805005789288529888abc7 100644
+index 1803607454276a6605a1afa3d790ed79de5c57cd..1b9f1bf26618701e124ad993423a89908471f4fa 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1615,6 +1615,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1613,6 +1613,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
  
          this.server.spark.tickStart(); // Paper - spark
          new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events

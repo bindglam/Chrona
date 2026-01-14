@@ -691,7 +691,7 @@ index db164101d440c503e2e88b1f31af7f0638faaec5..8be659c2585fe4bfe92912b22023d09a
              if (target != null) {
                  double d = this.distanceToSqr(target.getX(), target.getY(), target.getZ());
 diff --git a/net/minecraft/world/level/pathfinder/Path.java b/net/minecraft/world/level/pathfinder/Path.java
-index 5959e1b1772ffbdfb108365171fe37cbf56ef825..53e593de3445eb15ea8ecd9f917062cc83f16389 100644
+index 5959e1b1772ffbdfb108365171fe37cbf56ef825..cbad1574884c23109ea8d383eb3addf5c7b049e9 100644
 --- a/net/minecraft/world/level/pathfinder/Path.java
 +++ b/net/minecraft/world/level/pathfinder/Path.java
 @@ -11,7 +11,7 @@ import net.minecraft.world.entity.Entity;
@@ -703,12 +703,25 @@ index 5959e1b1772ffbdfb108365171fe37cbf56ef825..53e593de3445eb15ea8ecd9f917062cc
      public static final StreamCodec<FriendlyByteBuf, Path> STREAM_CODEC = StreamCodec.of((buffer, value) -> value.writeToStream(buffer), Path::createFromStream);
      public final List<Node> nodes;
      private Path.@Nullable DebugData debugData;
-@@ -98,11 +98,13 @@ public final class Path {
+@@ -98,11 +98,25 @@ public final class Path {
      }
  
      public boolean sameAs(@Nullable Path path) {
+-        return path != null && this.nodes.equals(path.nodes);
 +        if (path == this) return true; // Kaiiju - petal - short circuit
-         return path != null && this.nodes.equals(path.nodes);
++        if (path == null) return false; // Chrona - null check
++        // Chrona start - prevent ConcurrentModificationException
++        boolean isNodesEquals = this.nodes.size() == path.nodes.size();
++        if(isNodesEquals) {
++            for (int i = 0; i < this.nodes.size(); i++) {
++                if (!this.nodes.get(i).equals(path.nodes.get(i))) {
++                    isNodesEquals = false;
++                    break;
++                }
++            }
++        }
++        return isNodesEquals;
++        // Chrona end - prevent ConcurrentModificationException
      }
  
      @Override
@@ -717,7 +730,7 @@ index 5959e1b1772ffbdfb108365171fe37cbf56ef825..53e593de3445eb15ea8ecd9f917062cc
          return other instanceof Path path
              && this.nextNodeIndex == path.nextNodeIndex
              && this.debugData == path.debugData
-@@ -120,6 +122,17 @@ public final class Path {
+@@ -120,6 +134,17 @@ public final class Path {
          return this.reached;
      }
  
