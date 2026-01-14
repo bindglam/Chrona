@@ -5,10 +5,10 @@ Subject: [PATCH] Http API
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 4b5ed1e487e1d6e3041d3a3753ba63b984735609..014a7b08e09318d52de4e00cb97fb0be9bebb2f4 100644
+index 604f0100356dfd0bc9805005789288529888abc7..9267a7aa6e68de48adf7cf8e97358e4b7526e8ac 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -304,6 +304,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -307,6 +307,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
      public boolean isIteratingOverLevels = false; // Paper - Throw exception on world create while being ticked
      private final Set<String> pluginsBlockingSleep = new java.util.HashSet<>(); // Paper - API to allow/disallow tick sleeping
      public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
@@ -16,10 +16,10 @@ index 4b5ed1e487e1d6e3041d3a3753ba63b984735609..014a7b08e09318d52de4e00cb97fb0be
 +    @Nullable
 +    public org.wrd.chrona.util.Threaded<org.wrd.chrona.http.ApiServer> httpServer;
 +    // Chrona end - Http server
- 
-     public static <S extends MinecraftServer> S spin(Function<Thread, S> threadFunction) {
-         ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry.init(); // Paper - rewrite data converter system
-@@ -998,6 +1002,12 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+     // Paper start - improve tick loop
+     public final ca.spottedleaf.moonrise.common.time.TickData tickTimes1s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(1L));
+     public final ca.spottedleaf.moonrise.common.time.TickData tickTimes5s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(5L));
+@@ -1018,6 +1022,12 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
  
          LOGGER.info("Stopping server");
          Commands.COMMAND_SENDING_POOL.shutdownNow(); // Paper - Perf: Async command map building; Shutdown and don't bother finishing
@@ -33,10 +33,10 @@ index 4b5ed1e487e1d6e3041d3a3753ba63b984735609..014a7b08e09318d52de4e00cb97fb0be
          if (this.server != null) {
              this.server.spark.disable(); // Paper - spark
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 973f6f85222fd2f958b4af4a63c114fcef852f5a..da86361ddf64941ab9595ea786ce5b4d2240f247 100644
+index b0356aa2a9d791f7e201ae48be3db7c87ea9b751..95b3c8eeb6fa9783368302bd79154d60341db5f3 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -232,6 +232,17 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+@@ -317,6 +317,17 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
              return false;
          }
  

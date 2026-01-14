@@ -5,10 +5,10 @@ Subject: [PATCH] Minimize TPS lag
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 8e65ff139385be512a0a3fd00dbd9bc94daa967d..4b5ed1e487e1d6e3041d3a3753ba63b984735609 100644
+index 62ae421128a0238b09ec6ad746daff7178bd5d4c..604f0100356dfd0bc9805005789288529888abc7 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1527,6 +1527,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1615,6 +1615,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
  
          this.server.spark.tickStart(); // Paper - spark
          new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
@@ -17,10 +17,10 @@ index 8e65ff139385be512a0a3fd00dbd9bc94daa967d..4b5ed1e487e1d6e3041d3a3753ba63b9
          this.tickRateManager.tick();
          this.tickChildren(hasTimeLeft);
 diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
-index dda8d38ef61672cc714d9e5a475f9b0412ed5ff9..6a76843be96ca425a729a7032cc154b5701679ca 100644
+index dc65503a2d785d64d37b76b0303f51cf66d9769a..af12ec029249b10fc82952b383b21d151124d075 100644
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -835,6 +835,10 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+@@ -890,6 +890,10 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
      protected void tickTime() {
          if (this.tickTime) {
              long l = this.levelData.getGameTime() + 1L;
@@ -32,10 +32,10 @@ index dda8d38ef61672cc714d9e5a475f9b0412ed5ff9..6a76843be96ca425a729a7032cc154b5
              Profiler.get().push("scheduledFunctions");
              this.serverLevelData.getScheduledEvents().tick(this.server, l);
 diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
-index 3eb4ec6e6695c01be253a1160397af31a1302927..c58bb08d72fd81b3dc659b1bab9d781596bd5500 100644
+index 8463c43e7128d529c71bf6828cdf868661c65f6e..f677dc1ef8cc031f5eb94e92edc48faab1c384d0 100644
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -511,6 +511,12 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+@@ -514,6 +514,12 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
          }
  
          this.tickEffects();
@@ -49,10 +49,10 @@ index 3eb4ec6e6695c01be253a1160397af31a1302927..c58bb08d72fd81b3dc659b1bab9d7815
          this.yBodyRotO = this.yBodyRot;
          this.yRotO = this.getYRot();
 diff --git a/net/minecraft/world/entity/item/ItemEntity.java b/net/minecraft/world/entity/item/ItemEntity.java
-index 51804b611f469f2ab53e455e8c633b867b00cc88..14e18152fd5fc03dbe516e8ec15cbac118d0691c 100644
+index e82bb8f2d2b0e771dc371fd7e709116e1f5f204f..f898fd37b7076908fa5c5e9fd3edc36960b06b16 100644
 --- a/net/minecraft/world/entity/item/ItemEntity.java
 +++ b/net/minecraft/world/entity/item/ItemEntity.java
-@@ -135,6 +135,10 @@ public class ItemEntity extends Entity implements TraceableEntity {
+@@ -123,6 +123,10 @@ public class ItemEntity extends Entity implements TraceableEntity {
          super.inactiveTick();
          if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
              this.pickupDelay--;
@@ -63,7 +63,7 @@ index 51804b611f469f2ab53e455e8c633b867b00cc88..14e18152fd5fc03dbe516e8ec15cbac1
          }
          if (this.age != -32768) {
              this.age++;
-@@ -160,6 +164,10 @@ public class ItemEntity extends Entity implements TraceableEntity {
+@@ -148,6 +152,10 @@ public class ItemEntity extends Entity implements TraceableEntity {
              super.tick();
              if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
                  this.pickupDelay--;
@@ -75,10 +75,10 @@ index 51804b611f469f2ab53e455e8c633b867b00cc88..14e18152fd5fc03dbe516e8ec15cbac1
  
              this.xo = this.getX();
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index 8f4c45fbea2d7c1317aff36031bb834b07b23a82..ed8c24563a45d8b2e9d5c2a9fe09b978ba748428 100644
+index 7bf160cef8bd772d27d4a71f04d5d9861ef67984..ab65dbf74c90405764bfcd239abec509512cc5c8 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
-@@ -298,6 +298,10 @@ public abstract class Player extends LivingEntity {
+@@ -256,6 +256,10 @@ public abstract class Player extends Avatar implements ContainerUser {
  
          if (this.isSleeping()) {
              this.sleepCounter++;
@@ -89,7 +89,7 @@ index 8f4c45fbea2d7c1317aff36031bb834b07b23a82..ed8c24563a45d8b2e9d5c2a9fe09b978
              // Paper start - Add PlayerDeepSleepEvent
              if (this.sleepCounter == SLEEP_DURATION) {
                  if (!new io.papermc.paper.event.player.PlayerDeepSleepEvent((org.bukkit.entity.Player) getBukkitEntity()).callEvent()) {
-@@ -314,6 +318,10 @@ public abstract class Player extends LivingEntity {
+@@ -273,6 +277,10 @@ public abstract class Player extends Avatar implements ContainerUser {
              }
          } else if (this.sleepCounter > 0) {
              this.sleepCounter++;
