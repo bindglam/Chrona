@@ -22,6 +22,11 @@ public final class ChronaConfiguration extends Configuration {
                 public final Field<Integer> queueSize = createField("optimization.async.pathfinding.queue-size", 0);
                 public final Field<String> rejectPolicy = createField("optimization.async.pathfinding.reject-policy", PathfindTaskRejectPolicy.FLUSH_ALL.name());
             }
+
+            public final MobSpawning mobSpawning = new MobSpawning();
+            public final class MobSpawning {
+                public final Field<Boolean> enabled = createField("optimization.async.mob-spawning.enabled", false);
+            }
         }
 
         public final MaxProjectileChunkLoads maxProjectileChunkLoads = new MaxProjectileChunkLoads();
