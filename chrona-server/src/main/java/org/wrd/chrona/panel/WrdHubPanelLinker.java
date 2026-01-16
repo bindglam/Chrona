@@ -12,7 +12,7 @@ import java.util.List;
 
 public class WrdHubPanelLinker extends AbstractPanelLinker {
     private static final Logger LOGGER = LoggerFactory.getLogger(WrdHubPanelLinker.class);
-    private static final URI URL = URI.create("https://wrdhub.weirdhost.xyz/auth/chrona/snapshot");
+    private static final URI URL = URI.create("https://gateway.weirdhub.xyz/auth/chrona/snapshot");
     private static final List<ApiProvider> PROVIDERS = List.of(new VersionProvider(), new ServerTimeProvider(),
             new TPSProvider());
 
