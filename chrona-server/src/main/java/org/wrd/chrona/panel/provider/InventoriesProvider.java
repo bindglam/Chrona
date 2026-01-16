@@ -36,6 +36,16 @@ public class InventoriesProvider implements ApiProvider {
         }
         json.add("slots", slotsJson);
 
+        JsonArray armorsJson = new JsonArray();
+        for (ItemStack itemStack : player.getInventory().getArmorContents()) {
+            if(itemStack == null) {
+                slotsJson.add(new JsonObject());
+                continue;
+            }
+            armorsJson.add(Bukkit.getUnsafe().serializeItemAsJson(itemStack));
+        }
+        json.add("armors", armorsJson);
+
         return json;
     }
 }
