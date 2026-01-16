@@ -28,17 +28,19 @@ index 488e01966d764cecdf5d39e53a61230de7e48c14..eaac8a09d386fe9861b0cae3eba04bbf
          this.getConnection().stop();
          this.isSaving = true;
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 48d5711239e47da391c3699e4e03ddbf6c44564d..e6e9671b1c2faf86c16d1673350a5a4023f5314a 100644
+index 48d5711239e47da391c3699e4e03ddbf6c44564d..8964ec05ebf72860da7c23eebfe85840741d842f 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -266,6 +266,11 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+@@ -266,6 +266,13 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
          if(Boolean.TRUE.equals(this.chronaConfiguration.optimization.async.pathfinding.enabled.getValue()))
              org.wrd.chrona.async.entity.path.AsyncPathProcessor.init(this.chronaConfiguration);
          // Chrona end - async path finding
 +        // Chrona start - panel link
 +        org.wrd.chrona.panel.PanelInfo panelInfo = org.wrd.chrona.panel.PanelInfo.loadFromFile(org.wrd.chrona.panel.PanelLinker.INFO_FILE);
-+        if(panelInfo != null)
++        if(panelInfo != null) {
 +            panelLinker = panelInfo.createLinker();
++            panelLinker.run();
++        }
 +        // Chrona end - panel link
          this.server.spark.enableEarlyIfRequested(); // Paper - spark
          // Paper start - fix converting txt to json file; convert old users earlier after PlayerList creation but before file load/save
