@@ -64,7 +64,7 @@ public class ProvisionTask extends TimerTask {
                 logger.warn("Failed to link panel ( Code : {} )", responseCode);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logger.warn("Failed to link panel", e);
         }
     }
 
