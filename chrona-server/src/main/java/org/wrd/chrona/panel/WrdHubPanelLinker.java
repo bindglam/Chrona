@@ -17,7 +17,7 @@ public class WrdHubPanelLinker extends AbstractPanelLinker {
             new TPSProvider());
 
     public WrdHubPanelLinker(PanelInfo info) {
-        super(URL, PROVIDERS, info);
+        super(LOGGER, URL, PROVIDERS, info);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.wrd.chrona.panel;
 
 import com.google.gson.JsonObject;
+import org.slf4j.Logger;
 import org.wrd.chrona.panel.provider.ApiProvider;
 import org.wrd.chrona.util.StringUtil;
 
@@ -18,10 +19,12 @@ import java.util.List;
 import java.util.TimerTask;
 
 public class ProvisionTask extends TimerTask {
+    private final Logger logger;
     private final PanelLinker linker;
     private final List<ApiProvider> providers;
 
-    public ProvisionTask(PanelLinker linker, List<ApiProvider> providers) {
+    public ProvisionTask(Logger logger, PanelLinker linker, List<ApiProvider> providers) {
+        this.logger = logger;
         this.linker = linker;
         this.providers = providers;
     }
@@ -48,7 +51,6 @@ public class ProvisionTask extends TimerTask {
             }
 
             int responseCode = connection.getResponseCode();
-            System.out.println("Response Code : " + responseCode);
             if(responseCode == 200) return;
 
             try(BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
@@ -58,6 +60,8 @@ public class ProvisionTask extends TimerTask {
                 while ((inputLine = in.readLine()) != null) {
                     response.append(inputLine);
                 }
+
+                logger.warn("Failed to link panel ( Code : {} )", responseCode);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
