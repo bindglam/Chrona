@@ -27,6 +27,11 @@ public final class ChronaConfiguration extends Configuration {
             public final class MobSpawning {
                 public final Field<Boolean> enabled = createField("optimization.async.mob-spawning.enabled", false);
             }
+
+            public final ChunkSending chunkSending = new ChunkSending();
+            public final class ChunkSending {
+                public final Field<Boolean> enabled = createField("optimization.async.chunk-sending.enabled", false);
+            }
         }
 
         public final MaxProjectileChunkLoads maxProjectileChunkLoads = new MaxProjectileChunkLoads();

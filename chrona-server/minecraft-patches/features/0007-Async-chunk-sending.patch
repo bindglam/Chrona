@@ -1,0 +1,189 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bindglam <woobeen0516@gmail.com>
+Date: Fri, 16 Jan 2026 11:55:06 +0900
+Subject: [PATCH] Async chunk sending
+
+
+diff --git a/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java b/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
+index 7129c5e1920008ac54f3a8ac83f5589396f4e4e9..8090a5e80e4a6be355540d9fcd39b33d3016f5ef 100644
+--- a/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
++++ b/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
+@@ -440,7 +440,13 @@ public final class RegionizedPlayerChunkLoader {
+             // Note: drop isAlive() check so that chunks properly unload client-side when the player dies
+             ((ChunkSystemChunkHolder)((ChunkSystemServerLevel)this.world).moonrise$getChunkTaskScheduler().chunkHolderManager
+                 .getChunkHolder(chunkX, chunkZ).vanillaChunkHolder).moonrise$removeReceivedChunk(this.player);
++            // Chrona start - async chunk sending
++            if(world.getServer().chronaConfiguration.optimization.async.chunkSending.enabled.getValue()) {
++                PlayerChunkSender.POOL.execute(() -> this.player.connection.send(new ClientboundForgetLevelChunkPacket(new ChunkPos(chunkX, chunkZ))));
++            } else {
++            // Chrona end - async chunk sending
+             this.player.connection.send(new ClientboundForgetLevelChunkPacket(new ChunkPos(chunkX, chunkZ)));
++            } // Chrona
+             // Paper start - PlayerChunkUnloadEvent
+             if (io.papermc.paper.event.packet.PlayerChunkUnloadEvent.getHandlerList().getRegisteredListeners().length > 0) {
+                 new io.papermc.paper.event.packet.PlayerChunkUnloadEvent(player.getBukkitEntity().getWorld().getChunkAt(new ChunkPos(chunkX, chunkZ).longKey), player.getBukkitEntity()).callEvent();
+diff --git a/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java b/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
+index 19547e22620f16d01f05bbd13a4dcb9c0df636df..4672aed8679d66aa2e65f8600a286cc09e9828ea 100644
+--- a/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
++++ b/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
+@@ -75,6 +75,59 @@ public class ClientboundLevelChunkPacketData {
+         }
+     }
+ 
++    // Chrona start - async chunk sending
++    public ClientboundLevelChunkPacketData(LevelChunk levelChunk, io.papermc.paper.antixray.ChunkPacketInfo<net.minecraft.world.level.block.state.BlockState> chunkPacketInfo,
++                                           BlockEntity[] blockEntities, Map<Heightmap.Types, long[]> heightmaps) {
++        this.heightmaps = heightmaps;
++
++        int size = calculateChunkSize(levelChunk);
++        ByteBuf buffer = Unpooled.buffer(size);
++
++        try {
++            extractChunkData(new FriendlyByteBuf(buffer), levelChunk, chunkPacketInfo);
++
++            int actualSize = buffer.writerIndex();
++
++            if (actualSize != size) {
++                buffer.clear();
++                size = actualSize;
++                buffer.capacity(size);
++                extractChunkData(new FriendlyByteBuf(buffer), levelChunk, chunkPacketInfo);
++            }
++
++            byte[] array;
++            if(buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.readableBytes() == buffer.array().length) {
++                array = buffer.array();
++            } else {
++                array = new byte[buffer.readableBytes()];
++                buffer.getBytes(buffer.readerIndex(), array);
++            }
++
++            if (chunkPacketInfo != null)
++                chunkPacketInfo.setBuffer(array);
++            this.buffer = array;
++        } finally {
++            buffer.release();
++        }
++
++        this.blockEntitiesData = Lists.newArrayList();
++        int totalTileEntities = 0; // Paper - Handle oversized block entities in chunks
++
++        for (BlockEntity blockEntity : blockEntities) {
++            // Paper start - Handle oversized block entities in chunks
++            if (++totalTileEntities > BLOCK_ENTITY_LIMIT) {
++                net.minecraft.network.protocol.Packet<ClientGamePacketListener> packet = blockEntity.getUpdatePacket();
++                if (packet != null) {
++                    this.extraPackets.add(packet);
++                    continue;
++                }
++            }
++            // Paper end - Handle oversized block entities in chunks
++            this.blockEntitiesData.add(ClientboundLevelChunkPacketData.BlockEntityInfo.create(blockEntity));
++        }
++    }
++    // Chrona end - async chunk sending
++
+     public ClientboundLevelChunkPacketData(RegistryFriendlyByteBuf buffer, int x, int z) {
+         this.heightmaps = HEIGHTMAPS_STREAM_CODEC.decode(buffer);
+         int varInt = buffer.readVarInt();
+@@ -123,6 +176,7 @@ public class ClientboundLevelChunkPacketData {
+             // Paper end  - Anti-Xray - Add chunk packet info
+         }
+ 
++        if (Thread.currentThread().getName().startsWith("Chrona Async Chunk Sender")) return; // Chrona - async chunk sending
+         if (buffer.writerIndex() != buffer.capacity()) {
+             throw new IllegalStateException("Didn't fill chunk buffer: expected " + buffer.capacity() + " bytes, got " + buffer.writerIndex());
+         }
+diff --git a/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java b/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
+index 9f43cfbdd49df61de869fd65fb2cbea39a563260..f0e2a0fc30e8fd40668372541f635c7d4c7b5c57 100644
+--- a/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
++++ b/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
+@@ -44,6 +44,19 @@ public class ClientboundLevelChunkWithLightPacket implements Packet<ClientGamePa
+         this.lightData = new ClientboundLightUpdatePacketData(pos, lightEngine, skyLight, blockLight);
+         chunk.getLevel().chunkPacketBlockController.modifyBlocks(this, chunkPacketInfo); // Paper - Anti-Xray - Modify blocks
+     }
++    // Chrona start - async chunk sending
++    public ClientboundLevelChunkWithLightPacket(LevelChunk chunk, LevelLightEngine lightEngine, @Nullable BitSet skyLight, @Nullable BitSet blockLight, boolean modifyBlocks,
++                                                net.minecraft.world.level.block.entity.BlockEntity[] blockEntities, java.util.Map<net.minecraft.world.level.levelgen.Heightmap.Types, long[]> heightmaps) {
++        // Paper end - Anti-Xray
++        ChunkPos pos = chunk.getPos();
++        this.x = pos.x;
++        this.z = pos.z;
++        io.papermc.paper.antixray.ChunkPacketInfo<net.minecraft.world.level.block.state.BlockState> chunkPacketInfo = modifyBlocks ? chunk.getLevel().chunkPacketBlockController.getChunkPacketInfo(this, chunk) : null; // Paper - Ant-Xray
++        this.chunkData = new ClientboundLevelChunkPacketData(chunk, chunkPacketInfo, blockEntities, heightmaps); // Paper - Anti-Xray
++        this.lightData = new ClientboundLightUpdatePacketData(pos, lightEngine, skyLight, blockLight);
++        chunk.getLevel().chunkPacketBlockController.modifyBlocks(this, chunkPacketInfo); // Paper - Anti-Xray - Modify blocks
++    }
++    // Chrona end - async chunk sending
+ 
+     private ClientboundLevelChunkWithLightPacket(RegistryFriendlyByteBuf buffer) {
+         this.x = buffer.readInt();
+diff --git a/net/minecraft/server/network/PlayerChunkSender.java b/net/minecraft/server/network/PlayerChunkSender.java
+index 644948d64791d0ffa4166375d0f4419f1ffa214a..553d73f2c943226154128c2e8110d9beda2b0e1d 100644
+--- a/net/minecraft/server/network/PlayerChunkSender.java
++++ b/net/minecraft/server/network/PlayerChunkSender.java
+@@ -33,6 +33,15 @@ public class PlayerChunkSender {
+     private int unacknowledgedBatches;
+     private int maxUnacknowledgedBatches = 1;
+ 
++    // Chrona start - async chunk sending
++    public static final java.util.concurrent.ExecutorService POOL = java.util.concurrent.Executors.newCachedThreadPool(
++            new com.google.common.util.concurrent.ThreadFactoryBuilder()
++                    .setNameFormat("Chrona Async Chunk Sender")
++                    .setUncaughtExceptionHandler(net.minecraft.util.Util::onThreadException)
++                    .build()
++    );
++    // Chrona end - async chunk sending
++
+     public PlayerChunkSender(boolean memoryConnection) {
+         this.memoryConnection = memoryConnection;
+     }
+@@ -64,13 +73,25 @@ public class PlayerChunkSender {
+                     if (!list.isEmpty()) {
+                         ServerGamePacketListenerImpl serverGamePacketListenerImpl = player.connection;
+                         this.unacknowledgedBatches++;
++                        // Chrona start - async chunk sending
++                        if(serverLevel.getServer().chronaConfiguration.optimization.async.chunkSending.enabled.getValue()){
++                            POOL.execute(() -> serverGamePacketListenerImpl.send(ClientboundChunkBatchStartPacket.INSTANCE));
++                        } else {
++                        // Chrona end - async chunk sending
+                         serverGamePacketListenerImpl.send(ClientboundChunkBatchStartPacket.INSTANCE);
++                        } // Chrona
+ 
+                         for (LevelChunk levelChunk : list) {
+                             sendChunk(serverGamePacketListenerImpl, serverLevel, levelChunk);
+                         }
+ 
++                        // Chrona start - async chunk sending
++                        if(serverLevel.getServer().chronaConfiguration.optimization.async.chunkSending.enabled.getValue()){
++                            POOL.execute(() -> serverGamePacketListenerImpl.send(new ClientboundChunkBatchFinishedPacket(list.size())));
++                        } else {
++                        // Chrona end - async chunk sending
+                         serverGamePacketListenerImpl.send(new ClientboundChunkBatchFinishedPacket(list.size()));
++                        } // Chrona
+                         this.batchQuota = this.batchQuota - list.size();
+                     }
+                 }
+@@ -81,7 +102,22 @@ public class PlayerChunkSender {
+     public static void sendChunk(ServerGamePacketListenerImpl packetListener, ServerLevel level, LevelChunk chunk) { // Paper - rewrite chunk system - public
+         // Paper start - Anti-Xray
+         final boolean shouldModify = level.chunkPacketBlockController.shouldModify(packetListener.player, chunk);
++        // Chrona start - async chunk sending
++        if (level.getServer().chronaConfiguration.optimization.async.chunkSending.enabled.getValue()) {
++            net.minecraft.world.level.block.entity.BlockEntity[] blockEntities = chunk.blockEntities.values().toArray(new net.minecraft.world.level.block.entity.BlockEntity[0]);
++            java.util.Map<net.minecraft.world.level.levelgen.Heightmap.Types, long[]> heightmaps = new java.util.concurrent.ConcurrentHashMap<>();
++
++            chunk.getHeightmaps().forEach(entry -> {
++                if(entry.getKey().sendToClient()) {
++                    heightmaps.put(entry.getKey(), entry.getValue().getRawData());
++                }
++            });
++
++            POOL.execute(() -> packetListener.send(new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), null, null, shouldModify, blockEntities, heightmaps)));
++        } else {
++        // Chrona end - async chunk sending
+         packetListener.send(new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), null, null, shouldModify));
++        } // Chrona
+         // Paper end - Anti-Xray
+         // Paper start - PlayerChunkLoadEvent
+         if (io.papermc.paper.event.packet.PlayerChunkLoadEvent.getHandlerList().getRegisteredListeners().length > 0) {
