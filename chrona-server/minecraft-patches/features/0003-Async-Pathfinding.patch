@@ -5,7 +5,7 @@ Subject: [PATCH] Async Pathfinding
 
 
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 95b3c8eeb6fa9783368302bd79154d60341db5f3..94179995ccd844898bf845e728d8b88f07980fe3 100644
+index b0356aa2a9d791f7e201ae48be3db7c87ea9b751..c56a9029b0939d5569db5f4b48b8a195cc531cfb 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -262,6 +262,10 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface

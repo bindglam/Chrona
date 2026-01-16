@@ -5,22 +5,22 @@ Subject: [PATCH] Optimize mob spawning
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 208066b556ee74720a444551313a52974007f8ed..eeeee861f13195362cf229af12e09ed898ca8b54 100644
+index 1b9f1bf26618701e124ad993423a89908471f4fa..488e01966d764cecdf5d39e53a61230de7e48c14 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -311,6 +311,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
-     @org.jetbrains.annotations.Nullable
-     public org.wrd.chrona.util.Threaded<org.wrd.chrona.http.ApiServer> httpServer;
-     // Chrona end - Http server
+@@ -307,6 +307,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+     public boolean isIteratingOverLevels = false; // Paper - Throw exception on world create while being ticked
+     private final Set<String> pluginsBlockingSleep = new java.util.HashSet<>(); // Paper - API to allow/disallow tick sleeping
+     public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
 +    public gg.pufferfish.pufferfish.util.AsyncExecutor mobSpawnExecutor = new gg.pufferfish.pufferfish.util.AsyncExecutor("MobSpawning"); // Pufferfish - optimize mob spawning
      // Paper start - improve tick loop
      public final ca.spottedleaf.moonrise.common.time.TickData tickTimes1s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(1L));
      public final ca.spottedleaf.moonrise.common.time.TickData tickTimes5s  = new ca.spottedleaf.moonrise.common.time.TickData(java.util.concurrent.TimeUnit.SECONDS.toNanos(5L));
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 94179995ccd844898bf845e728d8b88f07980fe3..5f76258be98b7b3972ed7b916d6d710be09ed88c 100644
+index c56a9029b0939d5569db5f4b48b8a195cc531cfb..48d5711239e47da391c3699e4e03ddbf6c44564d 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -406,6 +406,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+@@ -395,6 +395,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
                  LOGGER.info("JMX monitoring enabled");
              }
  

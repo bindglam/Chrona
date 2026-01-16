@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bindglam <woobeen0516@gmail.com>
+Date: Fri, 16 Jan 2026 16:55:16 +0900
+Subject: [PATCH] Panel link
+
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index 488e01966d764cecdf5d39e53a61230de7e48c14..eaac8a09d386fe9861b0cae3eba04bbf1c475b19 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -304,6 +304,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+     public volatile Thread shutdownThread; // Paper - Improved watchdog support
+     public final io.papermc.paper.configuration.PaperConfigurations paperConfigurations; // Paper - add paper configuration files
+     public final org.wrd.chrona.configuration.ChronaConfiguration chronaConfiguration; // Chrona - add chrona configuration file
++    public org.wrd.chrona.panel.PanelLinker panelLinker; // Chrona - panel link
+     public boolean isIteratingOverLevels = false; // Paper - Throw exception on world create while being ticked
+     private final Set<String> pluginsBlockingSleep = new java.util.HashSet<>(); // Paper - API to allow/disallow tick sleeping
+     public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
+@@ -1024,6 +1025,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+             this.server.waitForAsyncTasksShutdown(); // Paper - Wait for Async Tasks during shutdown
+         }
+         // CraftBukkit end
++        // Chrona start - panel link
++        if(panelLinker != null)
++            panelLinker.close();
++        // Chrona end - panel link
+         if (io.papermc.paper.plugin.PluginInitializerManager.instance().pluginRemapper != null) io.papermc.paper.plugin.PluginInitializerManager.instance().pluginRemapper.shutdown(); // Paper - Plugin remapping
+         this.getConnection().stop();
+         this.isSaving = true;
+diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
+index 48d5711239e47da391c3699e4e03ddbf6c44564d..8964ec05ebf72860da7c23eebfe85840741d842f 100644
+--- a/net/minecraft/server/dedicated/DedicatedServer.java
++++ b/net/minecraft/server/dedicated/DedicatedServer.java
+@@ -266,6 +266,13 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+         if(Boolean.TRUE.equals(this.chronaConfiguration.optimization.async.pathfinding.enabled.getValue()))
+             org.wrd.chrona.async.entity.path.AsyncPathProcessor.init(this.chronaConfiguration);
+         // Chrona end - async path finding
++        // Chrona start - panel link
++        org.wrd.chrona.panel.PanelInfo panelInfo = org.wrd.chrona.panel.PanelInfo.loadFromFile(org.wrd.chrona.panel.PanelLinker.INFO_FILE);
++        if(panelInfo != null) {
++            panelLinker = panelInfo.createLinker();
++            panelLinker.run();
++        }
++        // Chrona end - panel link
+         this.server.spark.enableEarlyIfRequested(); // Paper - spark
+         // Paper start - fix converting txt to json file; convert old users earlier after PlayerList creation but before file load/save
+         if (this.convertOldUsers()) {
