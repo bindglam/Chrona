@@ -46,12 +46,6 @@ public final class ChronaConfiguration extends Configuration {
         }
     }
 
-    public final HttpServer httpServer = new HttpServer();
-    public final class HttpServer {
-        public final Field<Boolean> enabled = createField("http-server.enabled", false);
-        public final Field<Integer> port = createField("http-server.port", 3000);
-    }
-
 
     public ChronaConfiguration() {
         super(CONFIG_FILE);
