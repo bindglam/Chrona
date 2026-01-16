@@ -46,7 +46,10 @@ public class InventoriesProvider implements ApiProvider {
         }
         json.add("armors", armorsJson);
 
-        json.add("offhand", Bukkit.getUnsafe().serializeItemAsJson(player.getInventory().getItemInOffHand()));
+        if(player.getInventory().getItemInOffHand().isEmpty())
+            json.add("offhand", new JsonObject());
+        else
+            json.add("offhand", Bukkit.getUnsafe().serializeItemAsJson(player.getInventory().getItemInOffHand()));
 
         return json;
     }
