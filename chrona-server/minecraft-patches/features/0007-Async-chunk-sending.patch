@@ -23,10 +23,10 @@ index 7129c5e1920008ac54f3a8ac83f5589396f4e4e9..8090a5e80e4a6be355540d9fcd39b33d
              if (io.papermc.paper.event.packet.PlayerChunkUnloadEvent.getHandlerList().getRegisteredListeners().length > 0) {
                  new io.papermc.paper.event.packet.PlayerChunkUnloadEvent(player.getBukkitEntity().getWorld().getChunkAt(new ChunkPos(chunkX, chunkZ).longKey), player.getBukkitEntity()).callEvent();
 diff --git a/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java b/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
-index 19547e22620f16d01f05bbd13a4dcb9c0df636df..1d2130fda30a11e3b26f7c4e2205d9614cb8684d 100644
+index 19547e22620f16d01f05bbd13a4dcb9c0df636df..4672aed8679d66aa2e65f8600a286cc09e9828ea 100644
 --- a/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
 +++ b/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
-@@ -75,6 +75,43 @@ public class ClientboundLevelChunkPacketData {
+@@ -75,6 +75,59 @@ public class ClientboundLevelChunkPacketData {
          }
      }
  
@@ -37,17 +37,33 @@ index 19547e22620f16d01f05bbd13a4dcb9c0df636df..1d2130fda30a11e3b26f7c4e2205d961
 +
 +        int size = calculateChunkSize(levelChunk);
 +        ByteBuf buffer = Unpooled.buffer(size);
-+        extractChunkData(new FriendlyByteBuf(buffer), levelChunk, chunkPacketInfo);
 +
-+        while(size != buffer.writerIndex()) {
-+            buffer.writerIndex(0);
-+            size = calculateChunkSize(levelChunk);
++        try {
 +            extractChunkData(new FriendlyByteBuf(buffer), levelChunk, chunkPacketInfo);
++
++            int actualSize = buffer.writerIndex();
++
++            if (actualSize != size) {
++                buffer.clear();
++                size = actualSize;
++                buffer.capacity(size);
++                extractChunkData(new FriendlyByteBuf(buffer), levelChunk, chunkPacketInfo);
++            }
++
++            byte[] array;
++            if(buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.readableBytes() == buffer.array().length) {
++                array = buffer.array();
++            } else {
++                array = new byte[buffer.readableBytes()];
++                buffer.getBytes(buffer.readerIndex(), array);
++            }
++
++            if (chunkPacketInfo != null)
++                chunkPacketInfo.setBuffer(array);
++            this.buffer = array;
++        } finally {
++            buffer.release();
 +        }
-+        byte[] array = it.unimi.dsi.fastutil.bytes.ByteArrays.setLength(buffer.array(), buffer.writerIndex());
-+        if(chunkPacketInfo != null)
-+            chunkPacketInfo.setBuffer(array);
-+        this.buffer = array;
 +
 +        this.blockEntitiesData = Lists.newArrayList();
 +        int totalTileEntities = 0; // Paper - Handle oversized block entities in chunks
@@ -70,7 +86,7 @@ index 19547e22620f16d01f05bbd13a4dcb9c0df636df..1d2130fda30a11e3b26f7c4e2205d961
      public ClientboundLevelChunkPacketData(RegistryFriendlyByteBuf buffer, int x, int z) {
          this.heightmaps = HEIGHTMAPS_STREAM_CODEC.decode(buffer);
          int varInt = buffer.readVarInt();
-@@ -123,6 +160,7 @@ public class ClientboundLevelChunkPacketData {
+@@ -123,6 +176,7 @@ public class ClientboundLevelChunkPacketData {
              // Paper end  - Anti-Xray - Add chunk packet info
          }
  
