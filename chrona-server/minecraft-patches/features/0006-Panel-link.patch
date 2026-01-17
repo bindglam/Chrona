@@ -5,7 +5,7 @@ Subject: [PATCH] Panel link
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 488e01966d764cecdf5d39e53a61230de7e48c14..eaac8a09d386fe9861b0cae3eba04bbf1c475b19 100644
+index 1b9f1bf26618701e124ad993423a89908471f4fa..b5034fa15a8db979adf6db983095d121f3272b9f 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -304,6 +304,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -16,7 +16,7 @@ index 488e01966d764cecdf5d39e53a61230de7e48c14..eaac8a09d386fe9861b0cae3eba04bbf
      public boolean isIteratingOverLevels = false; // Paper - Throw exception on world create while being ticked
      private final Set<String> pluginsBlockingSleep = new java.util.HashSet<>(); // Paper - API to allow/disallow tick sleeping
      public static final long SERVER_INIT = System.nanoTime(); // Paper - Lag compensation
-@@ -1024,6 +1025,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1023,6 +1024,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
              this.server.waitForAsyncTasksShutdown(); // Paper - Wait for Async Tasks during shutdown
          }
          // CraftBukkit end
@@ -28,7 +28,7 @@ index 488e01966d764cecdf5d39e53a61230de7e48c14..eaac8a09d386fe9861b0cae3eba04bbf
          this.getConnection().stop();
          this.isSaving = true;
 diff --git a/net/minecraft/server/dedicated/DedicatedServer.java b/net/minecraft/server/dedicated/DedicatedServer.java
-index 48d5711239e47da391c3699e4e03ddbf6c44564d..8964ec05ebf72860da7c23eebfe85840741d842f 100644
+index c56a9029b0939d5569db5f4b48b8a195cc531cfb..0f220adb6024cb1e778045c9506f5930251cb4c3 100644
 --- a/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -266,6 +266,13 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
