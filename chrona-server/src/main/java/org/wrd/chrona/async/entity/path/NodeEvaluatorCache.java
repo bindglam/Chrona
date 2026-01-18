@@ -1,6 +1,5 @@
 package org.wrd.chrona.async.entity.path;
 
-import ca.spottedleaf.concurrentutil.collection.MultiThreadedQueue;
 import net.minecraft.world.level.pathfinder.NodeEvaluator;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.NotNull;
@@ -8,13 +7,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class NodeEvaluatorCache {
-    private static final Map<NodeEvaluatorFeatures, MultiThreadedQueue<NodeEvaluator>> threadLocalNodeEvaluators = new ConcurrentHashMap<>();
+    private static final Map<NodeEvaluatorFeatures, ConcurrentLinkedQueue<NodeEvaluator>> threadLocalNodeEvaluators = new ConcurrentHashMap<>();
     private static final Map<NodeEvaluator, NodeEvaluatorGenerator> nodeEvaluatorToGenerator = new ConcurrentHashMap<>();
 
     private static @NotNull Queue<NodeEvaluator> getQueueForFeatures(@NotNull NodeEvaluatorFeatures nodeEvaluatorFeatures) {
-        return threadLocalNodeEvaluators.computeIfAbsent(nodeEvaluatorFeatures, key -> new MultiThreadedQueue<>());
+        return threadLocalNodeEvaluators.computeIfAbsent(nodeEvaluatorFeatures, key -> new ConcurrentLinkedQueue<>());
     }
 
     public static @NotNull NodeEvaluator takeNodeEvaluator(@NotNull NodeEvaluatorGenerator generator, @NotNull NodeEvaluator localNodeEvaluator) {
@@ -39,6 +39,13 @@ public class NodeEvaluatorCache {
     }
 
     public static void removeNodeEvaluator(@NotNull NodeEvaluator nodeEvaluator) {
+        // Just remove from tracking map, don't call done() here
+        // done() should be called by the PathFinder in finally block
         nodeEvaluatorToGenerator.remove(nodeEvaluator);
+    }
+
+    public static void clear() {
+        threadLocalNodeEvaluators.clear();
+        nodeEvaluatorToGenerator.clear();
     }
 }

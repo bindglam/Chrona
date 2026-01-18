@@ -16,11 +16,24 @@ public final class ChronaConfiguration extends Configuration {
         public final class Async {
             public final Pathfinding pathfinding = new Pathfinding();
             public final class Pathfinding {
-                public final Field<Boolean> enabled = createField("optimization.async.pathfinding.enabled", false);
+                public final Field<Boolean> enabled = createField("optimization.async.pathfinding.enabled", true);
                 public final Field<Integer> maxThreads = createField("optimization.async.pathfinding.max-threads", 0);
                 public final Field<Integer> keepalive = createField("optimization.async.pathfinding.keepalive", 60);
                 public final Field<Integer> queueSize = createField("optimization.async.pathfinding.queue-size", 0);
                 public final Field<String> rejectPolicy = createField("optimization.async.pathfinding.reject-policy", PathfindTaskRejectPolicy.FLUSH_ALL.name());
+
+                // Chrona - pathfinding optimization
+                public final Field<Boolean> enableCache = createField("optimization.async.pathfinding.enable-cache", true);
+                public final Field<Boolean> enableThrottling = createField("optimization.async.pathfinding.enable-throttling", true);
+                public final Field<Integer> cacheExpiryMs = createField("optimization.async.pathfinding.cache-expiry-ms", 5000);
+                public final Field<Integer> cacheMaxSize = createField("optimization.async.pathfinding.cache-max-size", 1024);
+                public final Field<Integer> nearDistance = createField("optimization.async.pathfinding.throttling.near-distance", 32);
+                public final Field<Integer> midDistance = createField("optimization.async.pathfinding.throttling.mid-distance", 64);
+                public final Field<Integer> farDistance = createField("optimization.async.pathfinding.throttling.far-distance", 128);
+                public final Field<Integer> nearInterval = createField("optimization.async.pathfinding.throttling.near-interval", 1);
+                public final Field<Integer> midInterval = createField("optimization.async.pathfinding.throttling.mid-interval", 4);
+                public final Field<Integer> farInterval = createField("optimization.async.pathfinding.throttling.far-interval", 10);
+                public final Field<Integer> veryFarInterval = createField("optimization.async.pathfinding.throttling.very-far-interval", 20);
             }
 
             public final MobSpawning mobSpawning = new MobSpawning();

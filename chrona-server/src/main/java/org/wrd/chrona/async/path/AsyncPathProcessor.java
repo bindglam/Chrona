@@ -1,13 +1,13 @@
-package org.wrd.chrona.async.entity.path;
+package org.wrd.chrona.async.path;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import net.minecraft.util.Util;
 import net.minecraft.world.level.pathfinder.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.wrd.chrona.config.ChronaConfig;
 
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -16,35 +16,14 @@ public class AsyncPathProcessor {
     private static final Logger LOGGER = LogManager.getLogger("Chrona-AsyncPathfinding");
     private static final int CORE_POOL_SIZE = 1;
     private static ThreadPoolExecutor PATH_EXECUTOR;
-    private static long lastWarnMillis = 0;
 
-    public static void init(org.wrd.chrona.configuration.ChronaConfiguration config) {
+    public static void init(int maxThreads, int queueSize, long keepAliveSeconds) {
         if (PATH_EXECUTOR != null) return;
-
-        int maxThreads = 0;
-        int queueSize = 0;
-        long keepAliveSeconds = 60;
-        PathfindTaskRejectPolicy rejectPolicy = PathfindTaskRejectPolicy.FLUSH_ALL;
-        if (config != null) {
-            maxThreads = config.optimization.async.pathfinding.maxThreads.getValue();
-            queueSize = config.optimization.async.pathfinding.queueSize.getValue();
-            keepAliveSeconds = config.optimization.async.pathfinding.keepalive.getValue();
-            try {
-                rejectPolicy = PathfindTaskRejectPolicy.valueOf(
-                    config.optimization.async.pathfinding.rejectPolicy.getValue().toUpperCase()
-                );
-            } catch (IllegalArgumentException ignored) {
-                rejectPolicy = PathfindTaskRejectPolicy.FLUSH_ALL;
-            }
-        } else {
-            maxThreads = ChronaConfig.pathfindingMaxThreads;
-            queueSize = ChronaConfig.pathfindingQueueSize;
-            keepAliveSeconds = ChronaConfig.pathfindingKeepalive;
-        }
 
         if (maxThreads <= 0) {
             maxThreads = Math.max(Runtime.getRuntime().availableProcessors() / 4, 1);
         }
+
         if (queueSize <= 0) {
             queueSize = maxThreads * 256;
         }
@@ -60,7 +39,7 @@ public class AsyncPathProcessor {
                 .setUncaughtExceptionHandler(Util::onThreadException)
                 .setDaemon(true)
                 .build(),
-            new RejectPolicyHandler(rejectPolicy)
+            new CallerRunsOrFlushPolicy(maxThreads)
         );
 
         LOGGER.info("Initialized async pathfinding: {} threads, queue size {}", maxThreads, queueSize);
@@ -68,7 +47,7 @@ public class AsyncPathProcessor {
 
     static CompletableFuture<Void> queue(@NotNull AsyncPath path) {
         if (PATH_EXECUTOR == null) {
-            init(null);
+            init(-1, -1, 60);
         }
 
         return CompletableFuture.runAsync(path::process, PATH_EXECUTOR)
@@ -84,9 +63,16 @@ public class AsyncPathProcessor {
     }
 
     public static void awaitProcessing(@Nullable Path path, Consumer<@Nullable Path> afterProcessing) {
-        if (path != null && !path.isProcessed() && path instanceof AsyncPath asyncPath) {
+        if (path != null && !path.isDone() && path instanceof AsyncPath asyncPath) {
             asyncPath.schedulePostProcessing(() -> {
-                afterProcessing.accept(path);
+                try {
+                    Bukkit.getScheduler().runTask(
+                        Bukkit.getPluginManager().getPlugins()[0],
+                        () -> afterProcessing.accept(path)
+                    );
+                } catch (Exception e) {
+                    afterProcessing.accept(path);
+                }
             });
         } else {
             afterProcessing.accept(path);
@@ -107,36 +93,28 @@ public class AsyncPathProcessor {
         }
     }
 
-    private static class RejectPolicyHandler implements RejectedExecutionHandler {
-        private final PathfindTaskRejectPolicy policy;
+    private static class CallerRunsOrFlushPolicy implements RejectedExecutionHandler {
+        private final boolean useFlush;
+        private long lastWarn = 0;
 
-        RejectPolicyHandler(PathfindTaskRejectPolicy policy) {
-            this.policy = policy;
+        CallerRunsOrFlushPolicy(int maxThreads) {
+            this.useFlush = maxThreads >= 4;
         }
 
         @Override
-        public void rejectedExecution(Runnable task, ThreadPoolExecutor executor) {
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
             if (executor.isShutdown()) return;
 
-            switch (policy) {
-                case ABORT -> throw new RejectedExecutionException("Async pathfinding queue saturated");
-                case CALLER_RUNS -> task.run();
-                case DISCARD_OLDEST -> {
-                    executor.getQueue().poll();
-                    if (!executor.getQueue().offer(task)) {
-                        task.run();
-                    }
-                }
-                case FLUSH_ALL -> {
-                    executor.getQueue().clear();
-                    task.run();
-                }
+            if (useFlush) {
+                executor.getQueue().clear();
             }
 
+            r.run();
+
             long now = System.currentTimeMillis();
-            if (now - lastWarnMillis > 30000L) {
+            if (now - lastWarn > 30000L) {
                 LOGGER.warn("Pathfinding queue saturated - increase max-threads if this persists");
-                lastWarnMillis = now;
+                lastWarn = now;
             }
         }
     }

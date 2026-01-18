@@ -1,0 +1,69 @@
+chrona:
+  async:
+    enabled: true
+
+    parallel-compute:
+      threads: -1  # -1 = auto (CPU cores - 2)
+      timeout-ms: 45
+      use-lock-free: true  # Lock-free executor with LockSupport
+      queue-size: -1  # -1 = auto (threads * 8192)
+
+    pathfinding:
+      enabled: true
+      max-threads: -1  # -1 = auto (CPU cores / 4)
+      queue-size: -1   # -1 = auto (max-threads * 256)
+      keepalive-seconds: 60
+      rejection-policy: flush_all  # flush_all, caller_runs
+
+    entity:
+      batch-size: 16  # Entities per thread (MIN_CHUNK)
+      ai-parallel: true
+      physics-parallel: true
+      tracking-parallel: true
+
+    redstone:
+      parallel-evaluation: true
+      max-graph-size: 10000
+
+    chunk:
+      generation-threads: 4
+      lighting-threads: 2
+      batch-size: 16
+      pregeneration:
+        enabled: false
+        radius: 10
+
+    io:
+      chunk-io-threads: 4
+      compression-threads: 2
+      async-save: true
+      async-load: true
+
+    plugin-compat:
+      mode: full  # full, limited, strict
+      overlay-reads: true
+      queue-async-access: true
+      warn-unsafe-patterns: true
+
+  advanced:
+    simd:
+      enabled: true  # Auto-detect SIMD support
+      require-java-17: true
+
+    virtual-threads:
+      enabled: false  # Java 21+ required
+      use-for-scheduler: false
+      use-for-io: false
+
+    collections:
+      use-fastutil: true  # High-performance FastUtil collections
+
+  performance:
+    intent-merge:
+      priority-mode: timestamp  # timestamp, source, hybrid
+      conflict-resolution: newest  # newest, oldest, priority
+
+    snapshot:
+      cache-block-states: true
+      cache-entity-snapshots: true
+      max-cache-size: 100000

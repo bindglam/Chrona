@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mini-kio <kiolaaoz@naver.com>
+Date: Sat, 17 Jan 2026 19:51:27 +0900
+Subject: [PATCH] Chrona async tick system integration
+
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index eaac8a09d386fe9861b0cae3eba04bbf1c475b19..9a4fda263fbdce3119887402f212c8122df3a94c 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -647,6 +647,9 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         ((org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap()).initializeCommands();
+         this.server.getPluginManager().callEvent(new org.bukkit.event.server.ServerLoadEvent(org.bukkit.event.server.ServerLoadEvent.LoadType.STARTUP));
+         this.connection.acceptConnections();
++        // Chrona start - initialize async tick system
++        org.wrd.chrona.ChronaBootstrap.init(new java.io.File("chrona.yml"));
++        // Chrona end
+     }
+     // Paper end - rework world loading process
+ 
+@@ -1029,6 +1032,9 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         if(panelLinker != null)
+             panelLinker.close();
+         // Chrona end - panel link
++        // Chrona start - shutdown async tick system
++        org.wrd.chrona.ChronaBootstrap.shutdown();
++        // Chrona end
+         if (io.papermc.paper.plugin.PluginInitializerManager.instance().pluginRemapper != null) io.papermc.paper.plugin.PluginInitializerManager.instance().pluginRemapper.shutdown(); // Paper - Plugin remapping
+         this.getConnection().stop();
+         this.isSaving = true;
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index 1c90ea39777b78586bc3efd773d0aaa46649fca7..5a32a6f82040ea2b9dbd47e938ec5942af3d3fb3 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -747,6 +747,12 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+     }
+ 
+     public void tick(BooleanSupplier hasTimeLeft) {
++        // Chrona start - async tick system
++        if (org.wrd.chrona.config.ChronaConfig.asyncEnabled) {
++            org.wrd.chrona.tick.WorldTickManager.getInstance().tickWorld(this, hasTimeLeft);
++            return;
++        }
++        // Chrona end
+         ProfilerFiller profilerFiller = Profiler.get();
+         this.handlingTick = true;
+         TickRateManager tickRateManager = this.tickRateManager();
+diff --git a/net/minecraft/world/level/Level.java b/net/minecraft/world/level/Level.java
+index 579bbba4e823d4d0318e58759ca732b7c8e4d865..2c9647b68ef2243c5b44458d13fbf2fed178ab23 100644
+--- a/net/minecraft/world/level/Level.java
++++ b/net/minecraft/world/level/Level.java
+@@ -1059,6 +1059,11 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+             return true;
+         }
+         // CraftBukkit end
++        // Chrona start - intent system for setBlock
++        if (org.wrd.chrona.config.ChronaConfig.asyncEnabled && this instanceof ServerLevel serverLevel) {
++            return org.wrd.chrona.tick.compat.BukkitCompatLayer.interceptSetBlock(serverLevel, pos, state, flags);
++        }
++        // Chrona end
+         if (!this.isInValidBounds(pos)) {
+             return false;
+         } else if (!this.isClientSide() && this.isDebug()) {
+@@ -1299,7 +1304,13 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+             return Blocks.VOID_AIR.defaultBlockState();
+         } else {
+             ChunkAccess chunk = this.getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FULL, true); // Paper - manually inline to reduce hops and avoid unnecessary null check to reduce total byte code size, this should never return null and if it does we will see it the next line but the real stack trace will matter in the chunk engine
+-            return chunk.getBlockState(pos);
++            BlockState original = chunk.getBlockState(pos);
++            // Chrona start - overlay system for read-your-writes
++            if (org.wrd.chrona.config.ChronaConfig.asyncEnabled && this instanceof ServerLevel serverLevel) {
++                return org.wrd.chrona.tick.compat.BukkitCompatLayer.interceptGetBlock(serverLevel, pos, original);
++            }
++            // Chrona end
++            return original;
+         }
+     }
+ 
