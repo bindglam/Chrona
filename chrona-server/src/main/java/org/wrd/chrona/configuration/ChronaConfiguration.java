@@ -21,6 +21,12 @@ public final class ChronaConfiguration extends Configuration {
                 public final Field<Integer> keepalive = createField("optimization.async.pathfinding.keepalive", 60);
                 public final Field<Integer> queueSize = createField("optimization.async.pathfinding.queue-size", 0);
                 public final Field<String> rejectPolicy = createField("optimization.async.pathfinding.reject-policy", PathfindTaskRejectPolicy.FLUSH_ALL.name());
+
+                public final Cache cache = new Cache();
+                public final class Cache {
+                    public final Field<Integer> maxSize = createField("optimization.async.pathfinding.cache.max-size", 1024);
+                    public final Field<Long> expiryMs = createField("optimization.async.pathfinding.cache.expiry-ms", 5000L);
+                }
             }
 
             public final MobSpawning mobSpawning = new MobSpawning();
@@ -31,6 +37,21 @@ public final class ChronaConfiguration extends Configuration {
             public final ChunkSending chunkSending = new ChunkSending();
             public final class ChunkSending {
                 public final Field<Boolean> enabled = createField("optimization.async.chunk-sending.enabled", false);
+                /**
+                 * Chunk sending mode:
+                 * - "legacy": Direct async send (faster but may have ordering issues)
+                 * - "safe": Prepare async, send on main thread via CommitManager (ordered, safer)
+                 */
+                public final Field<String> mode = createField("optimization.async.chunk-sending.mode", "legacy");
+            }
+
+            public final CommitQueue commitQueue = new CommitQueue();
+            public final class CommitQueue {
+                public final Field<Integer> maxQueueSizePerPhase = createField("optimization.async.commit-queue.max-queue-size-per-phase", 4096);
+                public final Field<Integer> coalesceMapSize = createField("optimization.async.commit-queue.coalesce-map-size", 1024);
+                public final Field<Integer> defaultMaxStaleTicks = createField("optimization.async.commit-queue.default-max-stale-ticks", 5);
+                public final Field<Boolean> logStats = createField("optimization.async.commit-queue.log-stats", false);
+                public final Field<Integer> statsIntervalTicks = createField("optimization.async.commit-queue.stats-interval-ticks", 6000);
             }
         }
 
