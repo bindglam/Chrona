@@ -142,9 +142,33 @@ public class AsyncPath extends Path {
         Runnable runnable;
         while ((runnable = this.postProcessing.poll()) != null) {
             if (isTickThread) {
+                // Already on tick thread, run directly
                 runnable.run();
             } else {
-                MinecraftServer.getServer().scheduleOnMain(runnable);
+                // Chrona start - Route through CommitManager for consistent timing
+                final Runnable finalRunnable = runnable;
+                final long currentTick = org.wrd.chrona.async.commit.CommitManager.INSTANCE.getCurrentTick();
+                org.wrd.chrona.async.commit.CommitManager.INSTANCE.enqueue(
+                    new org.wrd.chrona.async.commit.Commit() {
+                        @Override
+                        public long getTickStamp() { return currentTick; }
+
+                        @Override
+                        public org.wrd.chrona.async.commit.CommitPhase getPhase() {
+                            return org.wrd.chrona.async.commit.CommitPhase.PRE_ENTITY_TICK;
+                        }
+
+                        @Override
+                        public boolean validate() { return true; }
+
+                        @Override
+                        public void apply() { finalRunnable.run(); }
+
+                        @Override
+                        public int getMaxStaleTicks() { return 10; }
+                    }
+                );
+                // Chrona end - Route through CommitManager
             }
         }
     }

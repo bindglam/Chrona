@@ -33,6 +33,9 @@ public class AsyncPathProcessor {
 
     public static void init(ChronaConfiguration config) {
         if (PATH_PROCESSING_EXECUTOR == null) {
+            // Initialize cache with configuration
+            NodeEvaluatorCache.init(config);
+
             PATH_PROCESSING_EXECUTOR = new ThreadPoolExecutor(
                     getCorePoolSize(config),
                     getMaxPoolSize(config),
@@ -41,6 +44,12 @@ public class AsyncPathProcessor {
                     getThreadFactory(config),
                     getRejectedPolicy(config)
             );
+
+            LOGGER.info("Async Pathfinding initialized with {} max threads, queue size {}, cache max size {}, cache expiry {}ms",
+                    getMaxPoolSize(config),
+                    config.optimization.async.pathfinding.queueSize.getValue() <= 0 ? getMaxPoolSize(config) * 256 : config.optimization.async.pathfinding.queueSize.getValue(),
+                    config.optimization.async.pathfinding.cache.maxSize.getValue(),
+                    config.optimization.async.pathfinding.cache.expiryMs.getValue());
         } else {
             // Temp no-op
             //throw new IllegalStateException();
@@ -126,7 +135,7 @@ public class AsyncPathProcessor {
             }
 
             if (System.currentTimeMillis() - lastWarnMillis > 30000L) {
-                LOGGER.warn("Async pathfinding processor is busy! Pathfinding tasks will be treated as policy defined in config. Increasing max-threads in Leaf config may help.");
+                LOGGER.warn("Async pathfinding processor is busy! Pathfinding tasks will be treated as policy defined in config. Increasing max-threads in Chrona config may help.");
                 lastWarnMillis = System.currentTimeMillis();
             }
         };
